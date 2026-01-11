@@ -1,6 +1,6 @@
 import streamlit as st
 
-st write("Truck Factor Calculator - คำนวณค่า Load Equivalency Factor (EALF)
+st.write("Truck Factor Calculator - คำนวณค่า Load Equivalency Factor (EALF)
 ตามมาตรฐาน AASHTO 1993 : ผู้พัฒนา: รศ.ดร.อิทธิพล มีผล")
 
 สูตรที่ใช้:
@@ -437,4 +437,5 @@ if __name__ == "__main__":
     print(f"\nน้ำหนักเพลา: 20 ตัน ({load_kip:.3f} kip), L2=2 (Tandem)")
     print(f"EALF (Flexible, pt=2.5, SN=5): {ealf_flex:.6f}")
     print(f"EALF (Rigid, pt=2.5, D=10\"): {ealf_rigid:.6f}")
+
 
