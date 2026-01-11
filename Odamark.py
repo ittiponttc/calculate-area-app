@@ -302,5 +302,6 @@ with st.expander("📖 ทฤษฎี Odemark's Method"):
 
 # Footer
 st.markdown("---")
-st.caption("🛣️ Odemark's Method Calculator | Developed for Pavement Engineering Education")
+st.caption("🛣️ Odemark's Method Calculator | พัฒนาโดย รศ.ดร.อิทธิพล มีผล  for Pavement Engineering Education")
+
 
