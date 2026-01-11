@@ -11,6 +11,5 @@ area = width * length
 
 # แสดงผล
 st.success(f"พื้นที่ = {area:,.2f} ตร.ม.")
-```
-
 ---
+
