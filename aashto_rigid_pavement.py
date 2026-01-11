@@ -421,6 +421,7 @@ st.sidebar.subheader("📈 ค่า Serviceability")
 Pi = st.sidebar.slider(
     "Initial Serviceability (Pᵢ)",
     min_value=4.0, max_value=4.8, value=4.5, step=0.1
+    help="AASHTO แนะนำ 0.45 สำหรับ Rigid Pavement"
 )
 pt = st.sidebar.slider(
     "Terminal Serviceability (pₜ)",
@@ -447,7 +448,7 @@ concrete_props = fc_options[fc_selected]
 Sc = st.sidebar.number_input(
     "Modulus of Rupture, Sc (psi)",
     min_value=400.0, max_value=800.0, 
-    value=float(concrete_props['Sc_psi']), step=10.0,
+    value=float(concrete_props['Sc_psi']), step=50,
     help="ค่า Modulus of Rupture ของคอนกรีต"
 )
 
@@ -464,12 +465,17 @@ J = st.sidebar.slider(
     "Load Transfer Coefficient (J)",
     min_value=2.0, max_value=4.5, value=J_default, step=0.1,
     help="ค่า J ขึ้นอยู่กับประเภทไหล่ทางและอุปกรณ์ถ่ายแรง"
+    help="JPCP/JRCP ไหล่ทางคอนกรีต 2.5-3.5 ค่ากลาง 2.8"
+    help="CRCP ไหล่ทางคอนกรีต 2.3-2.9 ค่ากลาง 2.5"
+    help=" ค่า J หากใช้ค่าน้อย==>ความหนาผิวทาง>>บางลง"
 )
 
 Cd = st.sidebar.slider(
     "Drainage Coefficient (Cd)",
     min_value=0.70, max_value=1.25, value=1.20, step=0.05,
     help="ค่าสัมประสิทธิ์การระบายน้ำ"
+    help="ค่าแนะนำโดยกรมทางหลวง = 1.0"
+    help=" ค่า Cd หากมีค่ามาก==>ความหนาผิวทาง>>บางลง"
 )
 
 st.sidebar.subheader("📉 Loss of Support")
