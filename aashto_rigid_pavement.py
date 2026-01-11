@@ -7,8 +7,45 @@
 import streamlit as st
 import numpy as np
 import math
-from scipy.optimize import brentq
 import pandas as pd
+
+
+def bisection_method(func, a, b, tol=1e-6, max_iter=100):
+    """
+    Bisection Method สำหรับหาค่า root ของฟังก์ชัน
+    ใช้แทน scipy.optimize.brentq
+    
+    Parameters:
+    - func: ฟังก์ชันที่ต้องการหา root
+    - a, b: ช่วงที่ค้นหา (func(a) และ func(b) ต้องมีเครื่องหมายต่างกัน)
+    - tol: ความคลาดเคลื่อนที่ยอมรับได้
+    - max_iter: จำนวนรอบสูงสุด
+    
+    Returns:
+    - root: ค่า x ที่ทำให้ func(x) ≈ 0
+    """
+    fa = func(a)
+    fb = func(b)
+    
+    if fa * fb > 0:
+        # ไม่มี root ในช่วงนี้
+        return None
+    
+    for _ in range(max_iter):
+        c = (a + b) / 2
+        fc = func(c)
+        
+        if abs(fc) < tol or (b - a) / 2 < tol:
+            return c
+        
+        if fa * fc < 0:
+            b = c
+            fb = fc
+        else:
+            a = c
+            fa = fc
+    
+    return (a + b) / 2
 
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(
@@ -327,7 +364,8 @@ def find_required_thickness(W18_design, params, D_min=6, D_max=20):
         if f_max < 0:
             return D_max + 1  # ต้องการความหนามากกว่าช่วงที่กำหนด
         
-        D_required = brentq(objective, D_min, D_max)
+        # ใช้ Bisection Method แทน scipy.optimize.brentq
+        D_required = bisection_method(objective, D_min, D_max)
         return D_required
     except:
         return None
