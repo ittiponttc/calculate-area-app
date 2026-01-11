@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd  
 
-st.title("Odemark's Method of Equivalent Thickness พัฒนาโดย รศ.ดร.อิทธิพล มีผล")
+st.title("การคำนวณความหนาเทียบเท่า Odemark's Method of Equivalent Thickness พัฒนาโดย รศ.ดร.อิทธิพล มีผล")
 st.subheader("Odemark's Method of Equivalent Thickness Calculator")
 
 # Sidebar สำหรับตั้งค่า
@@ -303,3 +303,4 @@ with st.expander("📖 ทฤษฎี Odemark's Method"):
 # Footer
 st.markdown("---")
 st.caption("🛣️ Odemark's Method Calculator | Developed for Pavement Engineering Education")
+
