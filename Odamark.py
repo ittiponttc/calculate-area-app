@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title("โปรแกรมคำนวณพื้นที่สี่เหลี่ยม")
+st.title("Odamark")
 
 # รับค่า input
 width = st.number_input("กว้าง (เมตร)", min_value=0.0, value=10.0)
@@ -11,5 +11,6 @@ area = width * length
 
 # แสดงผล
 st.success(f"พื้นที่ = {area:,.2f} ตร.ม.")
+
 
 
