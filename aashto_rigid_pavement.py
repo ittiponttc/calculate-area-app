@@ -421,7 +421,6 @@ st.sidebar.subheader("📈 ค่า Serviceability")
 Pi = st.sidebar.slider(
     "Initial Serviceability (Pᵢ)",
     min_value=4.0, max_value=4.8, value=4.5, step=0.1
-    help="AASHTO แนะนำ 0.45 สำหรับ Rigid Pavement"
 )
 pt = st.sidebar.slider(
     "Terminal Serviceability (pₜ)",
