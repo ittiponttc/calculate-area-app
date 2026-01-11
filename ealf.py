@@ -1,6 +1,7 @@
 import streamlit as st
 
-st.title("คำนวณค่า Load Equivalency Factor (EALF) ตามมาตรฐาน AASHTO 1993 พัตนาโดย รศ.ดร.อิทธิพล มีผล")
+st.title("คำนวณค่า Load Equivalency Factor (EALF) ตามมาตรฐาน AASHTO 1993 
+พัตนาโดย : รศ.ดร.อิทธิพล มีผล")
 
 import streamlit as st
 import pandas as pd
@@ -376,4 +377,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
