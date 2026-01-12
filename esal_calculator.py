@@ -499,7 +499,7 @@ def main():
     st.divider()
     st.markdown("""
     <div style="text-align: center; color: #888;">
-        พัฒนาเพื่อการเรียนการสอน ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.0
+        พัฒนาเพื่อการเรียนการสอนโดย รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.0
     </div>
     """, unsafe_allow_html=True)
 
