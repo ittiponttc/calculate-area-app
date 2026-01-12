@@ -4,7 +4,7 @@ ESAL Calculator - AASHTO 1993
 สำหรับผิวทาง Rigid Pavement และ Flexible Pavement
 ตามมาตรฐาน AASHTO Guide for Design of Pavement Structures (1993)
 
-พัฒนาสำหรับ: ภาควิชาครุศาสตร์โยธา มจพ.
+พัฒนาโดย: รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ.
 """
 
 import streamlit as st
@@ -499,7 +499,7 @@ def main():
     st.divider()
     st.markdown("""
     <div style="text-align: center; color: #888;">
-        พัฒนาสำหรับภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.0
+        พัฒนาเพื่อการเรียนการสอน ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.0
     </div>
     """, unsafe_allow_html=True)
 
