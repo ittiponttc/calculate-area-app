@@ -462,7 +462,7 @@ J_default = PAVEMENT_TYPES[pavement_type]["J_default"]
 J = st.sidebar.slider(
     "Load Transfer Coefficient (J)",
     min_value=2.0, max_value=4.5, value=J_default, step=0.1,
-    help="ค่า J ขึ้นอยู่กับประเภทไหล่ทางและอุปกรณ์ถ่ายแรง"
+    help="ค่า J  // JPCP 2.5-3.1 // CRCP 2.3-2.9"
 )
 
 Cd = st.sidebar.slider(
