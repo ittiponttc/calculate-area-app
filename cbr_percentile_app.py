@@ -18,91 +18,85 @@ st.markdown("---")
 with st.sidebar:
     st.header("📁 อัปโหลดข้อมูล")
     uploaded_file = st.file_uploader(
-        "เลือกไฟล์ Excel (.xlsx, .xls)",
-        type=['xlsx', 'xls'],
-        help="ไฟล์ควรมีคอลัมน์ Percentile และ CBR(%)"
+        "เลือกไฟล์ Excel (.xlsx)",
+        type=['xlsx'],
+        help="ไฟล์ควรมีคอลัมน์ CBR(%) เพียงคอลัมน์เดียว"
     )
     
     st.markdown("---")
     st.markdown("### 📋 รูปแบบข้อมูลที่ต้องการ")
     st.markdown("""
-    | Percentile | CBR(%) |
-    |------------|--------|
-    | 100.00     | 14.8   |
-    | 97.22      | 14.37  |
-    | ...        | ...    |
+    | CBR(%) |
+    |--------|
+    | 14.8   |
+    | 14.37  |
+    | 5.31   |
+    | ...    |
     """)
+    st.info("ระบบจะคำนวณ Percentile ให้อัตโนมัติ")
 
-# Sample data (based on the image)
-sample_data = {
-    'Percentile': [100.00, 97.22, 94.44, 91.67, 88.89, 86.11, 83.33, 80.56, 
-                   77.78, 75.00, 69.44, 66.67, 63.89, 61.11, 58.33, 55.56, 
-                   52.78, 50.00, 47.22, 44.44, 41.67, 38.89, 36.11, 33.33,
-                   30.56, 27.78, 25.00, 22.22, 19.44, 16.67, 13.89, 11.11,
-                   8.33, 5.56, 2.78],
-    'CBR': [14.8, 14.37, 5.31, 17.37, 5.48, 18.46, 4.85, 6.23,
-            5.02, 10.78, 10.52, 14, 15.5, 8.7, 12.93, 8.19,
-            8.1, 15.56, 16.88, 20.75, 20.3, 8, 7.84, 7.48,
-            23.55, 8.92, 13.3, 13.5, 13.86, 7.18, 6.95, 5.8,
-            6, 11.18, 9.69]
-}
+# Sample data (CBR values only)
+sample_cbr = [14.8, 14.37, 5.31, 17.37, 5.48, 18.46, 4.85, 6.23,
+              5.02, 10.78, 10.52, 14, 15.5, 8.7, 12.93, 8.19,
+              8.1, 15.56, 16.88, 20.75, 20.3, 8, 7.84, 7.48,
+              23.55, 8.92, 13.3, 13.5, 13.86, 7.18, 6.95, 5.8,
+              6, 11.18, 9.69, 7.48]
 
 if uploaded_file is not None:
     try:
         # Read Excel file
         df = pd.read_excel(uploaded_file)
         
-        # Try to identify columns
-        percentile_col = None
+        # Try to identify CBR column
         cbr_col = None
         
         for col in df.columns:
             col_lower = str(col).lower()
-            if 'percentile' in col_lower:
-                percentile_col = col
-            elif 'cbr' in col_lower:
+            if 'cbr' in col_lower:
                 cbr_col = col
+                break
         
-        # If not found, use first two columns
-        if percentile_col is None:
-            percentile_col = df.columns[0]
+        # If not found, use first column
         if cbr_col is None:
-            cbr_col = df.columns[1]
+            cbr_col = df.columns[0]
         
-        # Create working dataframe
-        df_work = pd.DataFrame({
-            'Percentile': pd.to_numeric(df[percentile_col], errors='coerce'),
-            'CBR': pd.to_numeric(df[cbr_col], errors='coerce')
-        }).dropna()
+        # Get CBR values
+        cbr_values = pd.to_numeric(df[cbr_col], errors='coerce').dropna().tolist()
         
-        st.success(f"✅ อ่านข้อมูลสำเร็จ: {len(df_work)} แถว")
+        st.success(f"✅ อ่านข้อมูลสำเร็จ: {len(cbr_values)} ตัวอย่าง")
         
     except Exception as e:
         st.error(f"❌ เกิดข้อผิดพลาด: {str(e)}")
         st.info("กรุณาตรวจสอบรูปแบบไฟล์ Excel")
-        df_work = None
+        cbr_values = None
 else:
     st.info("📌 กรุณาอัปโหลดไฟล์ Excel หรือใช้ข้อมูลตัวอย่าง")
     use_sample = st.checkbox("ใช้ข้อมูลตัวอย่าง", value=True)
     
     if use_sample:
-        df_work = pd.DataFrame(sample_data)
+        cbr_values = sample_cbr
     else:
-        df_work = None
+        cbr_values = None
 
-if df_work is not None and len(df_work) > 0:
+if cbr_values is not None and len(cbr_values) > 0:
     
-    # Sort by CBR for proper curve
-    df_sorted = df_work.sort_values('CBR').reset_index(drop=True)
+    # Sort CBR values
+    cbr_sorted = np.sort(cbr_values)
+    n = len(cbr_sorted)
     
     # Calculate cumulative percentile (percentage of values <= each CBR)
-    df_sorted['Cumulative_Percentile'] = (np.arange(1, len(df_sorted) + 1) / len(df_sorted)) * 100
+    cumulative_percentile = (np.arange(1, n + 1) / n) * 100
+    
+    # Create dataframe for display
+    df_sorted = pd.DataFrame({
+        'CBR': cbr_sorted,
+        'Cumulative_Percentile': cumulative_percentile
+    })
     
     # Create interpolation function
-    # For finding CBR at a given percentile
     f_interp = interpolate.interp1d(
-        df_sorted['Cumulative_Percentile'], 
-        df_sorted['CBR'],
+        cumulative_percentile, 
+        cbr_sorted,
         kind='linear',
         fill_value='extrapolate'
     )
@@ -125,13 +119,13 @@ if df_work is not None and len(df_work) > 0:
         # e.g., 90th percentile means 90% of values are >= this CBR
         design_percentile = 100 - target_percentile
         
-        if design_percentile >= df_sorted['Cumulative_Percentile'].min() and \
-           design_percentile <= df_sorted['Cumulative_Percentile'].max():
+        if design_percentile >= cumulative_percentile.min() and \
+           design_percentile <= cumulative_percentile.max():
             cbr_at_percentile = float(f_interp(design_percentile))
         else:
             cbr_at_percentile = float(f_interp(np.clip(design_percentile, 
-                                                        df_sorted['Cumulative_Percentile'].min(),
-                                                        df_sorted['Cumulative_Percentile'].max())))
+                                                        cumulative_percentile.min(),
+                                                        cumulative_percentile.max())))
         
         st.markdown("---")
         st.markdown("### 📊 ผลการวิเคราะห์")
@@ -142,11 +136,11 @@ if df_work is not None and len(df_work) > 0:
         
         st.markdown("---")
         st.markdown("### 📋 สถิติข้อมูล CBR")
-        st.write(f"**จำนวนตัวอย่าง:** {len(df_work)}")
-        st.write(f"**ค่าต่ำสุด:** {df_work['CBR'].min():.2f} %")
-        st.write(f"**ค่าสูงสุด:** {df_work['CBR'].max():.2f} %")
-        st.write(f"**ค่าเฉลี่ย:** {df_work['CBR'].mean():.2f} %")
-        st.write(f"**ส่วนเบี่ยงเบนมาตรฐาน:** {df_work['CBR'].std():.2f} %")
+        st.write(f"**จำนวนตัวอย่าง:** {n}")
+        st.write(f"**ค่าต่ำสุด:** {np.min(cbr_values):.2f} %")
+        st.write(f"**ค่าสูงสุด:** {np.max(cbr_values):.2f} %")
+        st.write(f"**ค่าเฉลี่ย:** {np.mean(cbr_values):.2f} %")
+        st.write(f"**ส่วนเบี่ยงเบนมาตรฐาน:** {np.std(cbr_values):.2f} %")
     
     with col1:
         st.markdown("### 📈 กราฟ Percentile vs CBR")
@@ -156,8 +150,8 @@ if df_work is not None and len(df_work) > 0:
         
         # Add main curve
         fig.add_trace(go.Scatter(
-            x=df_sorted['CBR'],
-            y=100 - df_sorted['Cumulative_Percentile'],  # Convert to "% >= value"
+            x=cbr_sorted,
+            y=100 - cumulative_percentile,  # Convert to "% >= value"
             mode='lines+markers',
             name='CBR Distribution',
             line=dict(color='blue', width=2),
@@ -197,19 +191,27 @@ if df_work is not None and len(df_work) > 0:
             font=dict(size=14, color='red')
         )
         
-        # Update layout
+        # Update layout with black border
         fig.update_layout(
             xaxis_title="CBR (%)",
             yaxis_title="Percentile (%)",
             xaxis=dict(
-                range=[0, max(df_sorted['CBR']) * 1.1],
+                range=[0, max(cbr_sorted) * 1.1],
                 gridcolor='lightgray',
-                showgrid=True
+                showgrid=True,
+                showline=True,
+                linewidth=2,
+                linecolor='black',
+                mirror=True
             ),
             yaxis=dict(
                 range=[0, 105],
                 gridcolor='lightgray',
-                showgrid=True
+                showgrid=True,
+                showline=True,
+                linewidth=2,
+                linecolor='black',
+                mirror=True
             ),
             plot_bgcolor='white',
             height=600,
@@ -231,21 +233,27 @@ if df_work is not None and len(df_work) > 0:
     
     # Show data table
     st.markdown("---")
-    st.markdown("### 📋 ตารางข้อมูล")
+    st.markdown("### 📋 ตารางข้อมูล (เรียงตาม CBR)")
     
-    # Create display table similar to the image
+    # Create display table with calculated percentile
+    df_display = pd.DataFrame({
+        'ลำดับ': range(1, n + 1),
+        'CBR (%)': cbr_sorted,
+        'Percentile (%)': np.round(100 - cumulative_percentile, 2)
+    })
+    
     col_a, col_b = st.columns(2)
     
     with col_a:
         st.dataframe(
-            df_work.head(len(df_work)//2 + 1),
+            df_display.head(len(df_display)//2 + 1),
             use_container_width=True,
             hide_index=True
         )
     
     with col_b:
         st.dataframe(
-            df_work.tail(len(df_work)//2),
+            df_display.tail(len(df_display)//2),
             use_container_width=True,
             hide_index=True
         )
