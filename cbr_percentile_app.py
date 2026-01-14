@@ -138,7 +138,7 @@ if cbr_values is not None and len(cbr_values) > 0:
         mode='lines+markers',
         name='CBR Distribution',
         line=dict(color='blue', width=2),
-        marker=dict(size=6, symbol='x', color='blue')
+        marker=dict(size=8, symbol='x', color='blue')
     ))
     
     # Add horizontal red dashed line at target percentile
