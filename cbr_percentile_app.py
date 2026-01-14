@@ -185,7 +185,7 @@ if cbr_values is not None and len(cbr_values) > 0:
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror='all',
+            mirror='True',
            
         ),
         yaxis=dict(
@@ -195,7 +195,7 @@ if cbr_values is not None and len(cbr_values) > 0:
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror='all',
+            mirror='True',
 
         ),
         plot_bgcolor='white',
