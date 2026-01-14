@@ -101,135 +101,138 @@ if cbr_values is not None and len(cbr_values) > 0:
         fill_value='extrapolate'
     )
     
-    col1, col2 = st.columns([2, 1])
+    # Input percentile at the top
+    st.markdown("### 🎯 กำหนดค่า Percentile")
+    target_percentile = st.number_input(
+        "Percentile ที่ต้องการ (%)",
+        min_value=0.0,
+        max_value=100.0,
+        value=90.0,
+        step=1.0,
+        help="ใส่ค่า Percentile ที่ต้องการหาค่า CBR"
+    )
     
-    with col2:
-        st.markdown("### 🎯 กำหนดค่า Percentile")
-        target_percentile = st.number_input(
-            "Percentile ที่ต้องการ (%)",
-            min_value=0.0,
-            max_value=100.0,
-            value=90.0,
-            step=1.0,
-            help="ใส่ค่า Percentile ที่ต้องการหาค่า CBR"
+    # Calculate CBR at target percentile
+    design_percentile = 100 - target_percentile
+    
+    if design_percentile >= cumulative_percentile.min() and \
+       design_percentile <= cumulative_percentile.max():
+        cbr_at_percentile = float(f_interp(design_percentile))
+    else:
+        cbr_at_percentile = float(f_interp(np.clip(design_percentile, 
+                                                    cumulative_percentile.min(),
+                                                    cumulative_percentile.max())))
+    
+    st.markdown("---")
+    
+    # Graph section - full width
+    st.markdown("### 📈 กราฟ Percentile vs CBR")
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # Add main curve
+    fig.add_trace(go.Scatter(
+        x=cbr_sorted,
+        y=100 - cumulative_percentile,  # Convert to "% >= value"
+        mode='lines+markers',
+        name='CBR Distribution',
+        line=dict(color='blue', width=2),
+        marker=dict(size=6, symbol='x', color='blue')
+    ))
+    
+    # Add horizontal red dashed line at target percentile
+    fig.add_trace(go.Scatter(
+        x=[0, cbr_at_percentile],
+        y=[target_percentile, target_percentile],
+        mode='lines',
+        name=f'Percentile {target_percentile}%',
+        line=dict(color='red', width=2, dash='dash')
+    ))
+    
+    # Add vertical red dashed line at CBR value
+    fig.add_trace(go.Scatter(
+        x=[cbr_at_percentile, cbr_at_percentile],
+        y=[0, target_percentile],
+        mode='lines',
+        name=f'CBR = {cbr_at_percentile:.2f}%',
+        line=dict(color='red', width=2, dash='dash')
+    ))
+    
+    # Add annotation for CBR value
+    fig.add_annotation(
+        x=cbr_at_percentile,
+        y=0,
+        text=f"<b>{cbr_at_percentile:.2f}</b>",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+        arrowcolor='red',
+        ax=0,
+        ay=40,
+        font=dict(size=14, color='red')
+    )
+    
+    # Update layout with black border
+    fig.update_layout(
+        xaxis_title="CBR (%)",
+        yaxis_title="Percentile (%)",
+        xaxis=dict(
+            range=[0, max(cbr_sorted) * 1.1],
+            gridcolor='lightgray',
+            showgrid=True,
+            showline=True,
+            linewidth=2,
+            linecolor='black',
+            mirror=True
+        ),
+        yaxis=dict(
+            range=[0, 105],
+            gridcolor='lightgray',
+            showgrid=True,
+            showline=True,
+            linewidth=2,
+            linecolor='black',
+            mirror=True
+        ),
+        plot_bgcolor='white',
+        height=500,
+        showlegend=True,
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99
+        ),
+        title=dict(
+            text=f"รูปที่ 2-1 ค่าร้อยละ CBR ที่เปอร์เซ็นต์ไทล์ ร้อยละ {target_percentile:.0f}",
+            x=0.5,
+            xanchor='center'
         )
-        
-        # Calculate CBR at target percentile
-        # For design, we typically want CBR at (100 - percentile)
-        # e.g., 90th percentile means 90% of values are >= this CBR
-        design_percentile = 100 - target_percentile
-        
-        if design_percentile >= cumulative_percentile.min() and \
-           design_percentile <= cumulative_percentile.max():
-            cbr_at_percentile = float(f_interp(design_percentile))
-        else:
-            cbr_at_percentile = float(f_interp(np.clip(design_percentile, 
-                                                        cumulative_percentile.min(),
-                                                        cumulative_percentile.max())))
-        
-        st.markdown("---")
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Results section - below the graph
+    st.markdown("---")
+    
+    col_result, col_stat = st.columns(2)
+    
+    with col_result:
         st.markdown("### 📊 ผลการวิเคราะห์")
         st.metric(
             label=f"CBR ที่ Percentile {target_percentile}%",
             value=f"{cbr_at_percentile:.2f} %"
         )
-        
-        st.markdown("---")
+    
+    with col_stat:
         st.markdown("### 📋 สถิติข้อมูล CBR")
         st.write(f"**จำนวนตัวอย่าง:** {n}")
         st.write(f"**ค่าต่ำสุด:** {np.min(cbr_values):.2f} %")
         st.write(f"**ค่าสูงสุด:** {np.max(cbr_values):.2f} %")
         st.write(f"**ค่าเฉลี่ย:** {np.mean(cbr_values):.2f} %")
         st.write(f"**ส่วนเบี่ยงเบนมาตรฐาน:** {np.std(cbr_values):.2f} %")
-    
-    with col1:
-        st.markdown("### 📈 กราฟ Percentile vs CBR")
-        
-        # Create figure
-        fig = go.Figure()
-        
-        # Add main curve
-        fig.add_trace(go.Scatter(
-            x=cbr_sorted,
-            y=100 - cumulative_percentile,  # Convert to "% >= value"
-            mode='lines+markers',
-            name='CBR Distribution',
-            line=dict(color='blue', width=2),
-            marker=dict(size=6, symbol='x', color='blue')
-        ))
-        
-        # Add horizontal red dashed line at target percentile
-        fig.add_trace(go.Scatter(
-            x=[0, cbr_at_percentile],
-            y=[target_percentile, target_percentile],
-            mode='lines',
-            name=f'Percentile {target_percentile}%',
-            line=dict(color='red', width=2, dash='dash')
-        ))
-        
-        # Add vertical red dashed line at CBR value
-        fig.add_trace(go.Scatter(
-            x=[cbr_at_percentile, cbr_at_percentile],
-            y=[0, target_percentile],
-            mode='lines',
-            name=f'CBR = {cbr_at_percentile:.2f}%',
-            line=dict(color='red', width=2, dash='dash')
-        ))
-        
-        # Add annotation for CBR value
-        fig.add_annotation(
-            x=cbr_at_percentile,
-            y=0,
-            text=f"<b>{cbr_at_percentile:.2f}</b>",
-            showarrow=True,
-            arrowhead=2,
-            arrowsize=1,
-            arrowwidth=2,
-            arrowcolor='red',
-            ax=0,
-            ay=40,
-            font=dict(size=14, color='red')
-        )
-        
-        # Update layout with black border
-        fig.update_layout(
-            xaxis_title="CBR (%)",
-            yaxis_title="Percentile (%)",
-            xaxis=dict(
-                range=[0, max(cbr_sorted) * 1.1],
-                gridcolor='lightgray',
-                showgrid=True,
-                showline=True,
-                linewidth=2,
-                linecolor='black',
-                mirror=True
-            ),
-            yaxis=dict(
-                range=[0, 105],
-                gridcolor='lightgray',
-                showgrid=True,
-                showline=True,
-                linewidth=2,
-                linecolor='black',
-                mirror=True
-            ),
-            plot_bgcolor='white',
-            height=600,
-            showlegend=True,
-            legend=dict(
-                yanchor="top",
-                y=0.99,
-                xanchor="right",
-                x=0.99
-            ),
-            title=dict(
-                text=f"รูปที่ 2-1 ค่าร้อยละ CBR ที่เปอร์เซ็นต์ไทล์ ร้อยละ {target_percentile:.0f}",
-                x=0.5,
-                xanchor='center'
-            )
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
     
     # Show data table
     st.markdown("---")
