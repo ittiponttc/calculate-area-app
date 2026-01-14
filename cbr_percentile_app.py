@@ -186,7 +186,7 @@ if cbr_values is not None and len(cbr_values) > 0:
             linewidth=2,
             linecolor='black',
             mirror='all',
-            constrain='domain'
+           
         ),
         yaxis=dict(
             range=[0, 105],
