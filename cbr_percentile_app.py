@@ -137,7 +137,7 @@ if cbr_values is not None and len(cbr_values) > 0:
         y=100 - cumulative_percentile,  # Convert to "% >= value"
         mode='lines+markers',
         name='CBR Distribution',
-        line=dict(color='blue', width=4),
+        line=dict(color='blue', width=2),
         marker=dict(size=6, symbol='x', color='blue')
     ))
     
@@ -171,7 +171,7 @@ if cbr_values is not None and len(cbr_values) > 0:
         arrowcolor='red',
         ax=0,
         ay=40,
-        font=dict(size=14, color='red')
+        font=dict(size=16, color='red')
     )
     
     # Update layout with black border and square aspect ratio
