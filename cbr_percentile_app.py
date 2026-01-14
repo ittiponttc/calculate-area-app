@@ -200,8 +200,8 @@ if cbr_values is not None and len(cbr_values) > 0:
             scaleratio=105 / (max(cbr_sorted) * 1.1)
         ),
         plot_bgcolor='white',
-        width=300,
-        height=500,
+        width=600,
+        height=600,
         showlegend=True,
         legend=dict(
             yanchor="top",
@@ -210,7 +210,7 @@ if cbr_values is not None and len(cbr_values) > 0:
             x=0.99
         ),
         title=dict(
-            text=f"ค่าร้อยละ CBR ที่เปอร์เซ็นต์ไทล์ ร้อยละ {target_percentile:.0f}",
+            text=f"รูปที่ 2-1 ค่าร้อยละ CBR ที่เปอร์เซ็นต์ไทล์ ร้อยละ {target_percentile:.0f}",
             x=0.5,
             xanchor='center'
         )
