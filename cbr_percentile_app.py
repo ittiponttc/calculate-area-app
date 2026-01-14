@@ -137,7 +137,7 @@ if cbr_values is not None and len(cbr_values) > 0:
         y=100 - cumulative_percentile,  # Convert to "% >= value"
         mode='lines+markers',
         name='CBR Distribution',
-        line=dict(color='blue', width=2),
+        line=dict(color='blue', width=4),
         marker=dict(size=6, symbol='x', color='blue')
     ))
     
@@ -209,7 +209,7 @@ if cbr_values is not None and len(cbr_values) > 0:
             x=0.99
         ),
         title=dict(
-            text=f"รูปที่ 2-1 ค่าร้อยละ CBR ที่เปอร์เซ็นต์ไทล์ ร้อยละ {target_percentile:.0f}",
+            text=f"ค่าร้อยละ CBR ที่เปอร์เซ็นต์ไทล์ ร้อยละ {target_percentile:.0f}",
             x=0.5,
             xanchor='center'
         )
