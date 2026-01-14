@@ -174,7 +174,7 @@ if cbr_values is not None and len(cbr_values) > 0:
         font=dict(size=14, color='red')
     )
     
-    # Update layout with black border
+    # Update layout with black border and square aspect ratio
     fig.update_layout(
         xaxis_title="CBR (%)",
         yaxis_title="Percentile (%)",
@@ -185,7 +185,8 @@ if cbr_values is not None and len(cbr_values) > 0:
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror=True
+            mirror=True,
+            constrain='domain'
         ),
         yaxis=dict(
             range=[0, 105],
@@ -194,10 +195,13 @@ if cbr_values is not None and len(cbr_values) > 0:
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror=True
+            mirror=True,
+            scaleanchor='x',
+            scaleratio=105 / (max(cbr_sorted) * 1.1)
         ),
         plot_bgcolor='white',
-        height=500,
+        width=600,
+        height=600,
         showlegend=True,
         legend=dict(
             yanchor="top",
@@ -212,7 +216,10 @@ if cbr_values is not None and len(cbr_values) > 0:
         )
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    # Center the chart
+    col_left, col_chart, col_right = st.columns([1, 2, 1])
+    with col_chart:
+        st.plotly_chart(fig, use_container_width=False)
     
     # Results section - below the graph
     st.markdown("---")
