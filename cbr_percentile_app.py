@@ -200,8 +200,8 @@ if cbr_values is not None and len(cbr_values) > 0:
             scaleratio=105 / (max(cbr_sorted) * 1.1)
         ),
         plot_bgcolor='white',
-        width=800,
-        height=200,
+        width=600,
+        height=1000,
         showlegend=True,
         legend=dict(
             yanchor="top",
