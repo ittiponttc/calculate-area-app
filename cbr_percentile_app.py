@@ -201,7 +201,7 @@ if cbr_values is not None and len(cbr_values) > 0:
         ),
         plot_bgcolor='white',
         width=1000,
-        height=100,
+        height=200,
         showlegend=True,
         legend=dict(
             yanchor="top",
