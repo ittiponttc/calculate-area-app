@@ -196,8 +196,7 @@ if cbr_values is not None and len(cbr_values) > 0:
             linewidth=2,
             linecolor='black',
             mirror=True,
-            scaleanchor='x',
-            scaleratio=105 / (max(cbr_sorted) * 1.1)
+
         ),
         plot_bgcolor='white',
         width=600,
