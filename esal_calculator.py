@@ -11,8 +11,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from io import BytesIO
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 # ============================================================
 # ข้อมูลรถบรรทุก 6 ชนิดตามกรมทางหลวงประเทศไทย
@@ -229,249 +227,6 @@ def get_all_truck_factors_table(pavement_type, pt):
     return pd.DataFrame(data)
 
 
-def draw_pavement_structure(pavement_type, param, base_thickness_cm=15, subbase_thickness_cm=20):
-    """
-    วาดรูปโครงสร้างชั้นทาง
-    
-    Parameters:
-    - pavement_type: 'rigid' หรือ 'flexible'
-    - param: D (นิ้ว) สำหรับ rigid หรือ SN สำหรับ flexible
-    - base_thickness_cm: ความหนาชั้น Base (ซม.)
-    - subbase_thickness_cm: ความหนาชั้น Subbase (ซม.)
-    """
-    # กำหนดความหนาชั้น Surface
-    if pavement_type == 'rigid':
-        # D เป็นนิ้ว แปลงเป็น ซม. (1 นิ้ว = 2.54 ซม.)
-        surface_thickness_cm = param * 2.54
-        surface_name = 'Concrete Slab'
-        surface_color = '#B0B0B0'  # สีเทา (คอนกรีต)
-        title = f'Rigid Pavement Structure (D = {param}" = {surface_thickness_cm:.1f} cm)'
-    else:
-        # SN ใช้ประมาณความหนา Asphalt
-        # สมมติ a1 = 0.44, ความหนา AC = SN / a1 * 2.54 (ประมาณ)
-        surface_thickness_cm = (param / 0.44) * 2.54
-        surface_name = 'Asphalt Concrete'
-        surface_color = '#2C2C2C'  # สีดำ (แอสฟัลต์)
-        title = f'Flexible Pavement Structure (SN = {param}, AC ≈ {surface_thickness_cm:.1f} cm)'
-    
-    # กำหนดความหนาแต่ละชั้น
-    layers = [
-        {'name': surface_name, 'thickness': surface_thickness_cm, 'color': surface_color},
-        {'name': 'Base Course', 'thickness': base_thickness_cm, 'color': '#D4A574'},  # สีน้ำตาลอ่อน
-        {'name': 'Subbase Course', 'thickness': subbase_thickness_cm, 'color': '#C4A35A'},  # สีเหลืองน้ำตาล
-        {'name': 'Subgrade', 'thickness': 25, 'color': '#8B7355'},  # สีน้ำตาลเข้ม
-    ]
-    
-    # สร้าง Figure
-    fig, ax = plt.subplots(figsize=(10, 8))
-    
-    # กำหนดขนาดรูป
-    width = 8
-    x_start = 1
-    y_current = 0
-    
-    # วาดแต่ละชั้น (จากบนลงล่าง)
-    total_height = sum(layer['thickness'] for layer in layers)
-    
-    for i, layer in enumerate(layers):
-        height = layer['thickness']
-        
-        # วาดสี่เหลี่ยมแทนชั้นทาง
-        rect = patches.Rectangle(
-            (x_start, y_current - height),
-            width, height,
-            linewidth=2,
-            edgecolor='black',
-            facecolor=layer['color']
-        )
-        ax.add_patch(rect)
-        
-        # เพิ่ม pattern สำหรับแต่ละชั้น
-        if layer['name'] == 'Subgrade':
-            # วาดจุดสำหรับ Subgrade
-            for row in range(int(height // 5)):
-                for col in range(int(width // 0.8)):
-                    ax.plot(x_start + 0.4 + col * 0.8, y_current - 2.5 - row * 5, 
-                           'o', color='#6B5344', markersize=2)
-        
-        # เพิ่มข้อความชื่อชั้นและความหนา
-        # ชื่อชั้น (ซ้าย)
-        ax.text(x_start - 0.1, y_current - height/2, 
-                layer['name'], 
-                ha='right', va='center', fontsize=11, fontweight='bold')
-        
-        # ความหนา (ขวา)
-        if layer['name'] != 'Subgrade':
-            ax.text(x_start + width + 0.1, y_current - height/2, 
-                    f"{layer['thickness']:.1f} cm", 
-                    ha='left', va='center', fontsize=11, fontweight='bold',
-                    color='#1E3A5F')
-        
-        # วาดเส้นบอกความหนา
-        if layer['name'] != 'Subgrade':
-            # เส้นลูกศรบอกความหนา
-            ax.annotate('', xy=(x_start + width + 0.8, y_current), 
-                       xytext=(x_start + width + 0.8, y_current - height),
-                       arrowprops=dict(arrowstyle='<->', color='#1E3A5F', lw=1.5))
-        
-        y_current -= height
-    
-    # ตั้งค่าแกน
-    ax.set_xlim(-2, 12)
-    ax.set_ylim(y_current - 5, 10)
-    ax.set_aspect('equal')
-    ax.axis('off')
-    
-    # เพิ่มหัวข้อ
-    ax.set_title(title, fontsize=14, fontweight='bold', color='#1E3A5F', pad=20)
-    
-    # เพิ่มสัญลักษณ์ผิวถนน
-    ax.plot([x_start, x_start + width], [0, 0], 'k-', linewidth=3)
-    
-    # เพิ่มลูกศรแสดงทิศทางน้ำหนัก
-    ax.annotate('', xy=(x_start + width/2, -2), xytext=(x_start + width/2, 5),
-               arrowprops=dict(arrowstyle='->', color='red', lw=2))
-    ax.text(x_start + width/2 + 0.3, 2, 'Load', fontsize=10, color='red', fontweight='bold')
-    
-    plt.tight_layout()
-    return fig
-
-
-def draw_pavement_structure_detailed(pavement_type, param, base_thickness_cm=15, subbase_thickness_cm=20):
-    """
-    วาดรูปโครงสร้างชั้นทางแบบละเอียด พร้อมตารางข้อมูล
-    """
-    # กำหนดความหนาชั้น Surface
-    if pavement_type == 'rigid':
-        surface_thickness_cm = param * 2.54
-        surface_name = 'Concrete Slab'
-        surface_color = '#B0B0B0'
-        surface_name_th = 'พื้นคอนกรีต'
-    else:
-        surface_thickness_cm = (param / 0.44) * 2.54
-        surface_name = 'Asphalt Concrete'
-        surface_color = '#2C2C2C'
-        surface_name_th = 'แอสฟัลต์คอนกรีต'
-    
-    layers = [
-        {'name': surface_name, 'name_th': surface_name_th, 'thickness': surface_thickness_cm, 'color': surface_color},
-        {'name': 'Base Course', 'name_th': 'ชั้นพื้นทาง', 'thickness': base_thickness_cm, 'color': '#D4A574'},
-        {'name': 'Subbase Course', 'name_th': 'ชั้นรองพื้นทาง', 'thickness': subbase_thickness_cm, 'color': '#C4A35A'},
-        {'name': 'Subgrade', 'name_th': 'ดินคันทาง', 'thickness': 30, 'color': '#8B7355'},
-    ]
-    
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8), gridspec_kw={'width_ratios': [2, 1]})
-    
-    # === ส่วนซ้าย: วาดโครงสร้างชั้นทาง ===
-    width = 6
-    x_start = 1
-    y_current = 0
-    
-    for i, layer in enumerate(layers):
-        height = layer['thickness']
-        
-        rect = patches.Rectangle(
-            (x_start, y_current - height),
-            width, height,
-            linewidth=2,
-            edgecolor='black',
-            facecolor=layer['color']
-        )
-        ax1.add_patch(rect)
-        
-        # Pattern สำหรับ Subgrade
-        if layer['name'] == 'Subgrade':
-            for row in range(int(height // 6)):
-                for col in range(int(width // 0.6)):
-                    ax1.plot(x_start + 0.3 + col * 0.6, y_current - 3 - row * 6, 
-                           'o', color='#6B5344', markersize=2)
-        
-        # ข้อความชื่อชั้น (กลาง)
-        ax1.text(x_start + width/2, y_current - height/2, 
-                f"{layer['name']}\n({layer['name_th']})", 
-                ha='center', va='center', fontsize=10, fontweight='bold',
-                color='white' if layer['name'] in ['Asphalt Concrete', 'Subgrade'] else 'black')
-        
-        # ความหนา (ขวา)
-        if layer['name'] != 'Subgrade':
-            ax1.text(x_start + width + 0.3, y_current - height/2, 
-                    f"{layer['thickness']:.1f} cm", 
-                    ha='left', va='center', fontsize=11, fontweight='bold',
-                    color='#1E3A5F')
-            
-            # เส้นลูกศรบอกความหนา
-            ax1.annotate('', xy=(x_start + width + 1.2, y_current), 
-                        xytext=(x_start + width + 1.2, y_current - height),
-                        arrowprops=dict(arrowstyle='<->', color='#1E3A5F', lw=1.5))
-        
-        y_current -= height
-    
-    ax1.set_xlim(-1, 10)
-    ax1.set_ylim(y_current - 5, 15)
-    ax1.set_aspect('equal')
-    ax1.axis('off')
-    
-    # หัวข้อ
-    if pavement_type == 'rigid':
-        title = f'Rigid Pavement (D = {param}" = {surface_thickness_cm:.1f} cm)'
-    else:
-        title = f'Flexible Pavement (SN = {param})'
-    ax1.set_title(title, fontsize=14, fontweight='bold', color='#1E3A5F', y=1.02)
-    
-    # เส้นผิวถนน
-    ax1.plot([x_start, x_start + width], [0, 0], 'k-', linewidth=4)
-    
-    # ลูกศรแสดงน้ำหนัก
-    ax1.annotate('', xy=(x_start + width/2, -3), xytext=(x_start + width/2, 10),
-               arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
-    ax1.text(x_start + width/2, 12, 'Traffic Load', fontsize=11, color='red', 
-            fontweight='bold', ha='center')
-    
-    # === ส่วนขวา: ตารางข้อมูล ===
-    ax2.axis('off')
-    
-    # สร้างตาราง
-    table_data = []
-    total_thickness = 0
-    for layer in layers:
-        if layer['name'] != 'Subgrade':
-            table_data.append([layer['name_th'], layer['name'], f"{layer['thickness']:.1f} cm"])
-            total_thickness += layer['thickness']
-    
-    table_data.append(['รวมความหนา', 'Total Thickness', f"{total_thickness:.1f} cm"])
-    
-    table = ax2.table(
-        cellText=table_data,
-        colLabels=['ชั้นทาง', 'Layer', 'ความหนา'],
-        loc='center',
-        cellLoc='center',
-        colWidths=[0.35, 0.35, 0.3]
-    )
-    
-    table.auto_set_font_size(False)
-    table.set_fontsize(11)
-    table.scale(1.2, 2)
-    
-    # จัดสีตาราง
-    for i in range(len(table_data) + 1):
-        for j in range(3):
-            cell = table[(i, j)]
-            if i == 0:  # Header
-                cell.set_facecolor('#1E3A5F')
-                cell.set_text_props(color='white', fontweight='bold')
-            elif i == len(table_data):  # Total row
-                cell.set_facecolor('#E8E8E8')
-                cell.set_text_props(fontweight='bold')
-            else:
-                cell.set_facecolor('#F5F5F5')
-    
-    ax2.set_title('ข้อมูลโครงสร้างชั้นทาง', fontsize=12, fontweight='bold', 
-                 color='#1E3A5F', y=0.85)
-    
-    plt.tight_layout()
-    return fig
-
-
 # ============================================================
 # Streamlit App
 # ============================================================
@@ -542,7 +297,7 @@ def main():
             param = st.selectbox(
                 "ความหนาพื้นคอนกรีต (D)",
                 options=[10, 11, 12, 13, 14],
-                format_func=lambda x: f"D = {x} นิ้ว ({x*2.54:.1f} cm)"
+                format_func=lambda x: f"D = {x} นิ้ว"
             )
             param_label = f"D = {param} นิ้ว"
         else:
@@ -614,7 +369,7 @@ def main():
         )
     
     # Main Content
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 คำนวณ ESAL", "🏗️ โครงสร้างชั้นทาง", "🚛 ข้อมูล Truck Factor", "📘 คู่มือ"])
+    tab1, tab2, tab3 = st.tabs(["📊 คำนวณ ESAL", "🚛 ข้อมูล Truck Factor", "📘 คู่มือ"])
     
     with tab1:
         col1, col2 = st.columns([1, 2])
@@ -766,63 +521,7 @@ def main():
             else:
                 st.warning("⚠️ กรุณาอัพโหลดข้อมูลหรือใช้ข้อมูลตัวอย่าง")
     
-    # ============================================================
-    # Tab 2: โครงสร้างชั้นทาง
-    # ============================================================
     with tab2:
-        st.subheader("🏗️ โครงสร้างชั้นทาง (Pavement Structure)")
-        
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            st.write("**ตั้งค่าความหนาชั้นทาง:**")
-            base_cm = st.slider("ความหนาชั้น Base Course (cm)", 10, 30, 15, 1)
-            subbase_cm = st.slider("ความหนาชั้น Subbase Course (cm)", 15, 40, 20, 1)
-        
-        with col2:
-            # แสดงข้อมูลผิวทางที่เลือก
-            if pavement_type == 'rigid':
-                surface_cm = param * 2.54
-                st.info(f"""
-                **ประเภทผิวทาง:** Rigid Pavement (คอนกรีต)  
-                **ความหนาพื้นคอนกรีต (D):** {param} นิ้ว = **{surface_cm:.1f} cm**  
-                **Terminal Serviceability (pt):** {pt}
-                """)
-            else:
-                surface_cm = (param / 0.44) * 2.54
-                st.info(f"""
-                **ประเภทผิวทาง:** Flexible Pavement (ลาดยาง)  
-                **Structural Number (SN):** {param}  
-                **ความหนา Asphalt โดยประมาณ:** {surface_cm:.1f} cm  
-                **Terminal Serviceability (pt):** {pt}
-                """)
-        
-        st.divider()
-        
-        # วาดรูปโครงสร้างชั้นทาง
-        fig = draw_pavement_structure_detailed(pavement_type, param, base_cm, subbase_cm)
-        st.pyplot(fig)
-        plt.close()
-        
-        # ดาวน์โหลดรูป
-        st.divider()
-        
-        # บันทึกรูปเป็น PNG
-        buf = BytesIO()
-        fig_download = draw_pavement_structure_detailed(pavement_type, param, base_cm, subbase_cm)
-        fig_download.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
-        buf.seek(0)
-        plt.close()
-        
-        st.download_button(
-            label="📥 ดาวน์โหลดรูปโครงสร้างชั้นทาง (PNG)",
-            data=buf,
-            file_name=f"pavement_structure_{pavement_type}_{param}.png",
-            mime="image/png",
-            use_container_width=True
-        )
-    
-    with tab3:
         st.subheader("🚛 ข้อมูลรถบรรทุก 6 ประเภทตามกรมทางหลวง")
         
         truck_details = []
@@ -859,7 +558,7 @@ def main():
             st.write("**🛤️ Flexible Pavement (pt = 3.0)**")
             st.dataframe(get_all_truck_factors_table('flexible', 3.0), use_container_width=True, hide_index=True)
     
-    with tab4:
+    with tab3:
         st.subheader("📘 คู่มือการใช้งาน")
         
         st.markdown("""
@@ -877,7 +576,7 @@ def main():
         
         ### 2️⃣ ตั้งค่าพารามิเตอร์
         
-        - **Rigid:** D = 10-14 นิ้ว (25.4-35.6 cm)
+        - **Rigid:** D = 10-14 นิ้ว
         - **Flexible:** SN = 4-7
         - **pt:** 2.0, 2.5 หรือ 3.0
         
@@ -888,19 +587,13 @@ def main():
         - กดปุ่ม "Reset เป็นค่า Default" เพื่อคืนค่าเริ่มต้น
         - ค่าที่แก้ไขจะแสดงสถานะ "✏️ แก้ไข" ในตารางผลลัพธ์
         
-        ### 4️⃣ ดูโครงสร้างชั้นทาง
-        
-        - ไปที่ Tab "🏗️ โครงสร้างชั้นทาง"
-        - ปรับความหนาชั้น Base และ Subbase ได้
-        - ดาวน์โหลดรูปโครงสร้างเป็น PNG
-        
-        ### 5️⃣ สูตรคำนวณ ESAL
+        ### 4️⃣ สูตรคำนวณ ESAL
         """)
         
         st.latex(r'ESAL = \sum_{i=1}^{n} \sum_{j=1}^{6} (ADT_{ij} \times TF_j \times LF \times DF \times 365)')
         
         st.markdown("""
-        ### 6️⃣ สูตรคำนวณ Truck Factor (AASHTO 1993)
+        ### 5️⃣ สูตรคำนวณ Truck Factor (AASHTO 1993)
         
         **Flexible Pavement (สมการ 2-1):**
         """)
@@ -920,7 +613,7 @@ def main():
     st.divider()
     st.markdown("""
     <div style="text-align: center; color: #888;">
-        พัฒนาเพื่อการเรียนการสอนโดย รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.3
+        พัฒนาเพื่อการเรียนการสอนโดย รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.2
     </div>
     """, unsafe_allow_html=True)
 
