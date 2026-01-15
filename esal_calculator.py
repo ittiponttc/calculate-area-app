@@ -147,7 +147,7 @@ def get_default_truck_factor(truck_code, pavement_type, pt, param):
             return TRUCK_FACTORS_FLEX_PT30[truck_code][param]
 
 
-def calculate_esal(traffic_df, truck_factors, lane_factor=0.5, direction_factor=0.9):
+def calculate_esal(traffic_df, truck_factors, lane_factor=0.5, direction_factor=1.0):
     """คำนวณ ESAL จากข้อมูลปริมาณจราจร"""
     results = []
     total_esal = 0
