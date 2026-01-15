@@ -312,7 +312,7 @@ def main():
         
         st.subheader("🚗 ค่าสัดส่วน")
         lane_factor = st.slider("Lane Distribution Factor", 0.1, 1.0, 0.5, 0.05)
-        direction_factor = st.slider("Directional Factor", 0.5, 1.0, 1.0, 0.1)
+        direction_factor = st.slider("Directional Factor", 0.5, 1.0, 0.9, 0.1)
         
         st.divider()
         
