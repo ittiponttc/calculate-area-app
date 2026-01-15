@@ -109,8 +109,8 @@ TRUCK_FACTORS_FLEX_PT20 = {
 }
 
 
-def get_truck_factor(truck_code, pavement_type, pt, param):
-    """ดึงค่า Truck Factor จากตาราง"""
+def get_default_truck_factor(truck_code, pavement_type, pt, param):
+    """ดึงค่า Truck Factor เริ่มต้นจากตาราง"""
     if pavement_type == 'rigid':
         if pt == 2.5:
             return TRUCK_FACTORS_RIGID_PT25[truck_code][param]
@@ -123,12 +123,8 @@ def get_truck_factor(truck_code, pavement_type, pt, param):
             return TRUCK_FACTORS_FLEX_PT20[truck_code][param]
 
 
-def calculate_esal(traffic_df, pavement_type, pt, param, lane_factor=0.5, direction_factor=1.0):
+def calculate_esal(traffic_df, truck_factors, lane_factor=0.5, direction_factor=1.0):
     """คำนวณ ESAL จากข้อมูลปริมาณจราจร"""
-    truck_factors = {}
-    for code in TRUCKS.keys():
-        truck_factors[code] = get_truck_factor(code, pavement_type, pt, param)
-    
     results = []
     total_esal = 0
     
@@ -151,7 +147,7 @@ def calculate_esal(traffic_df, pavement_type, pt, param, lane_factor=0.5, direct
         total_esal += year_esal
         results.append(year_data)
     
-    return pd.DataFrame(results), total_esal, truck_factors
+    return pd.DataFrame(results), total_esal
 
 
 def create_template():
@@ -285,6 +281,48 @@ def main():
         
         st.divider()
         
+        # ============================================================
+        # ส่วนแก้ไขค่า Truck Factor
+        # ============================================================
+        st.subheader("🚛 ค่า Truck Factor")
+        
+        # สร้าง session state สำหรับเก็บค่า Truck Factor
+        tf_key = f"tf_{pavement_type}_{pt}_{param}"
+        if tf_key not in st.session_state:
+            st.session_state[tf_key] = {}
+            for code in TRUCKS.keys():
+                st.session_state[tf_key][code] = get_default_truck_factor(code, pavement_type, pt, param)
+        
+        # ปุ่ม Reset เป็นค่า Default
+        if st.button("🔄 Reset เป็นค่า Default", use_container_width=True):
+            for code in TRUCKS.keys():
+                st.session_state[tf_key][code] = get_default_truck_factor(code, pavement_type, pt, param)
+            st.rerun()
+        
+        # Input สำหรับแก้ไขค่า Truck Factor แต่ละประเภท
+        st.caption("กรอกค่า Truck Factor (แก้ไขได้)")
+        
+        truck_factors = {}
+        for code in TRUCKS.keys():
+            default_val = get_default_truck_factor(code, pavement_type, pt, param)
+            current_val = st.session_state[tf_key].get(code, default_val)
+            
+            new_val = st.number_input(
+                f"{code}",
+                min_value=0.0,
+                max_value=50.0,
+                value=float(current_val),
+                step=0.0001,
+                format="%.4f",
+                key=f"input_{tf_key}_{code}",
+                help=f"{TRUCKS[code]['desc']} | Default: {default_val:.4f}"
+            )
+            
+            st.session_state[tf_key][code] = new_val
+            truck_factors[code] = new_val
+        
+        st.divider()
+        
         st.subheader("📥 ดาวน์โหลด Template")
         template_df = create_template()
         st.download_button(
@@ -337,8 +375,9 @@ def main():
             st.subheader("📈 ผลการคำนวณ ESAL")
             
             if traffic_df is not None:
-                results_df, total_esal, truck_factors = calculate_esal(
-                    traffic_df, pavement_type, pt, param, lane_factor, direction_factor
+                # ใช้ค่า Truck Factor จาก sidebar (ที่ผู้ใช้กรอก/แก้ไขได้)
+                results_df, total_esal = calculate_esal(
+                    traffic_df, truck_factors, lane_factor, direction_factor
                 )
                 
                 # แสดงผลรวม
@@ -379,11 +418,19 @@ def main():
                 
                 st.divider()
                 
-                # ตาราง Truck Factor
+                # ตาราง Truck Factor ที่ใช้ (แสดงค่าที่ผู้ใช้กรอก)
                 st.write("**🚛 ค่า Truck Factor ที่ใช้:**")
                 tf_display = []
                 for code, tf in truck_factors.items():
-                    tf_display.append({'รหัส': code, 'ประเภท': TRUCKS[code]['desc'], 'Truck Factor': f"{tf:.4f}"})
+                    default_tf = get_default_truck_factor(code, pavement_type, pt, param)
+                    status = "✅" if abs(tf - default_tf) < 0.0001 else "✏️ แก้ไข"
+                    tf_display.append({
+                        'รหัส': code, 
+                        'ประเภท': TRUCKS[code]['desc'], 
+                        'Truck Factor': f"{tf:.4f}",
+                        'Default': f"{default_tf:.4f}",
+                        'สถานะ': status
+                    })
                 st.dataframe(pd.DataFrame(tf_display), use_container_width=True, hide_index=True)
                 
                 st.divider()
@@ -414,12 +461,19 @@ def main():
                 
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    # Summary sheet
                     pd.DataFrame({
                         'รายการ': ['ประเภทผิวทาง', 'pt', 'พารามิเตอร์', 'Lane Factor', 'Direction Factor', 'ESAL รวม', 'จำนวนปี'],
                         'ค่า': ['Rigid' if pavement_type == 'rigid' else 'Flexible', pt, param_label, lane_factor, direction_factor, f"{total_esal:,.0f}", len(traffic_df)]
                     }).to_excel(writer, sheet_name='Summary', index=False)
+                    
+                    # Truck Factors sheet (รวมค่าที่ใช้และค่า Default)
                     pd.DataFrame(tf_display).to_excel(writer, sheet_name='Truck Factors', index=False)
+                    
+                    # ESAL by Year
                     results_df.to_excel(writer, sheet_name='ESAL by Year', index=False)
+                    
+                    # Input Data
                     traffic_df.to_excel(writer, sheet_name='Input Data', index=False)
                 
                 st.download_button(
@@ -445,7 +499,7 @@ def main():
         st.dataframe(pd.DataFrame(truck_details), use_container_width=True, hide_index=True)
         
         st.divider()
-        st.subheader("📊 ตาราง Truck Factor")
+        st.subheader("📊 ตาราง Truck Factor (ค่า Default ตาม AASHTO 1993)")
         
         col1, col2 = st.columns(2)
         
@@ -485,7 +539,14 @@ def main():
         - **Flexible:** SN = 4-7
         - **pt:** 2.0 หรือ 2.5
         
-        ### 3️⃣ สูตรคำนวณ ESAL
+        ### 3️⃣ แก้ไขค่า Truck Factor (ใหม่!)
+        
+        - ค่า Truck Factor สามารถแก้ไขได้ที่ Sidebar
+        - ค่า Default จะโหลดตามตาราง AASHTO 1993
+        - กดปุ่ม "Reset เป็นค่า Default" เพื่อคืนค่าเริ่มต้น
+        - ค่าที่แก้ไขจะแสดงสถานะ "✏️ แก้ไข" ในตารางผลลัพธ์
+        
+        ### 4️⃣ สูตรคำนวณ ESAL
         """)
         
         st.latex(r'ESAL = \sum_{i=1}^{n} \sum_{j=1}^{6} (ADT_{ij} \times TF_j \times LF \times DF \times 365)')
@@ -499,7 +560,7 @@ def main():
     st.divider()
     st.markdown("""
     <div style="text-align: center; color: #888;">
-        พัฒนาเพื่อการเรียนการสอนโดย รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.0
+        พัฒนาเพื่อการเรียนการสอนโดย รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.1
     </div>
     """, unsafe_allow_html=True)
 
