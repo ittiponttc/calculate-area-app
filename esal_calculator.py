@@ -56,9 +56,9 @@ TRUCKS = {
         'desc': 'Full Trailer (รถพ่วง)',
         'axles': [
             {'name': 'เพลาหน้า', 'load_ton': 5.0, 'type': 'Single'},
-            {'name': 'เพลาหลัง', 'load_ton': 17.75, 'type': 'Tandem'},
-            {'name': 'เพลาพ่วงหน้า', 'load_ton': 10.0, 'type': 'Single'},
-            {'name': 'เพลาพ่วงหลัง', 'load_ton': 17.75, 'type': 'Tandem'}
+            {'name': 'เพลาหลัง', 'load_ton': 20, 'type': 'Tandem'},
+            {'name': 'เพลาพ่วงหน้า', 'load_ton': 11, 'type': 'Single'},
+            {'name': 'เพลาพ่วงหลัง', 'load_ton': 11, 'type': 'Single'}
         ]
     }
 }
