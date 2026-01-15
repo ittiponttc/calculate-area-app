@@ -65,62 +65,86 @@ TRUCKS = {
 
 # ============================================================
 # ตาราง Truck Factor คำนวณตาม AASHTO 1993
-# ตรวจสอบกับตาราง AASHTO Table D.4-D.7 (Flexible) และ D.13-D.16 (Rigid)
+# อัพเดตค่าจากไฟล์ Truck_Factor_Calculator.xlsx
 # ============================================================
-
-# Rigid Pavement - pt = 2.5
-TRUCK_FACTORS_RIGID_PT25 = {
-    'MB':  {10: 0.7327, 11: 0.7318, 12: 0.7314, 13: 0.7312, 14: 0.7311},
-    'HB':  {10: 1.4579, 11: 1.4623, 12: 1.4643, 13: 1.4653, 14: 1.4659},
-    'MT':  {10: 3.6578, 11: 3.7113, 12: 3.7383, 13: 3.7520, 14: 3.7591},
-    'HT':  {10: 5.9211, 11: 6.0928, 12: 6.1867, 13: 6.2362, 14: 6.2626},
-    'STR': {10: 11.7203, 11: 12.0643, 12: 12.2523, 13: 12.3516, 14: 12.4044},
-    'TR':  {10: 13.1410, 11: 13.4203, 12: 13.5684, 13: 13.6454, 14: 13.6860}
-}
 
 # Rigid Pavement - pt = 2.0
 TRUCK_FACTORS_RIGID_PT20 = {
-    'MB':  {10: 0.5765, 11: 0.5758, 12: 0.5755, 13: 0.5754, 14: 0.5753},
-    'HB':  {10: 1.1691, 11: 1.1725, 12: 1.1740, 13: 1.1748, 14: 1.1752},
-    'MT':  {10: 3.0458, 11: 3.0879, 12: 3.1091, 13: 3.1197, 14: 3.1252},
-    'HT':  {10: 4.9862, 11: 5.1310, 12: 5.2101, 13: 5.2518, 14: 5.2740},
-    'STR': {10: 9.8709, 11: 10.1609, 12: 10.3192, 13: 10.4028, 14: 10.4474},
-    'TR':  {10: 8.0167, 11: 8.1311, 12: 8.1891, 13: 8.2185, 14: 8.2339}
+    'MB':  {10: 0.731742, 11: 0.731339, 12: 0.731151, 13: 0.731059, 14: 0.731012},
+    'HB':  {10: 1.462652, 11: 1.464597, 12: 1.465524, 13: 1.465981, 14: 1.466216},
+    'MT':  {10: 3.718199, 11: 3.742581, 12: 3.754803, 13: 3.760977, 14: 3.764184},
+    'HT':  {10: 6.125043, 11: 6.204343, 12: 6.247170, 13: 6.269632, 14: 6.281529},
+    'STR': {10: 12.128867, 11: 12.287718, 12: 12.373488, 13: 12.418469, 14: 12.442292},
+    'TR':  {10: 13.466316, 11: 13.594592, 12: 13.661961, 13: 13.696817, 14: 13.715152}
 }
 
-# Flexible Pavement - pt = 2.5
-TRUCK_FACTORS_FLEX_PT25 = {
-    'MB':  {4: 0.4788, 5: 0.4368, 6: 0.4116, 7: 0.3990},
-    'HB':  {4: 0.9002, 5: 0.8580, 6: 0.8295, 7: 0.8146},
-    'MT':  {4: 3.0695, 5: 3.2038, 6: 3.4511, 7: 3.6452},
-    'HT':  {4: 3.0536, 5: 3.1575, 6: 3.3118, 7: 3.4218},
-    'STR': {4: 5.9557, 5: 6.1828, 6: 6.5016, 7: 6.7265},
-    'TR':  {4: 6.0018, 5: 6.1519, 6: 6.3433, 7: 6.4731}
+# Rigid Pavement - pt = 2.5
+TRUCK_FACTORS_RIGID_PT25 = {
+    'MB':  {10: 0.732709, 11: 0.731812, 12: 0.731393, 13: 0.731189, 14: 0.731085},
+    'HB':  {10: 1.457942, 11: 1.462254, 12: 1.464313, 13: 1.465329, 14: 1.465850},
+    'MT':  {10: 3.657799, 11: 3.711341, 12: 3.738346, 13: 3.752027, 14: 3.759145},
+    'HT':  {10: 5.921064, 11: 6.092776, 12: 6.186668, 13: 6.236237, 14: 6.262582},
+    'STR': {10: 11.720309, 11: 12.064293, 12: 12.252335, 13: 12.351598, 14: 12.404353},
+    'TR':  {10: 13.141034, 11: 13.420301, 12: 13.568419, 13: 13.645455, 14: 13.686091}
+}
+
+# Rigid Pavement - pt = 3.0
+TRUCK_FACTORS_RIGID_PT30 = {
+    'MB':  {10: 0.733958, 11: 0.732422, 12: 0.731706, 13: 0.731357, 14: 0.731179},
+    'HB':  {10: 1.451898, 11: 1.459241, 12: 1.462753, 13: 1.464488, 14: 1.465379},
+    'MT':  {10: 3.581408, 11: 3.671458, 12: 3.717236, 13: 3.740520, 14: 3.752660},
+    'HT':  {10: 5.668347, 11: 5.951971, 12: 6.109552, 13: 6.193451, 14: 6.238241},
+    'STR': {10: 11.214096, 11: 11.782308, 12: 12.097912, 13: 12.265925, 14: 12.355613},
+    'TR':  {10: 12.734883, 11: 13.199416, 12: 13.448924, 13: 13.579571, 14: 13.648731}
 }
 
 # Flexible Pavement - pt = 2.0
 TRUCK_FACTORS_FLEX_PT20 = {
-    'MB':  {4: 0.3665, 5: 0.3376, 6: 0.3202, 7: 0.3116},
-    'HB':  {4: 0.7089, 5: 0.6814, 6: 0.6626, 7: 0.6534},
-    'MT':  {4: 2.5455, 5: 2.6613, 6: 2.8713, 7: 3.0364},
-    'HT':  {4: 2.5080, 5: 2.5937, 6: 2.7220, 7: 2.8131},
-    'STR': {4: 4.8886, 5: 5.0778, 6: 5.3438, 7: 5.5286},
-    'TR':  {4: 4.9138, 5: 5.0387, 6: 5.1978, 7: 5.3023}
+    'MB':  {4: 0.423803, 5: 0.406999, 6: 0.396430, 7: 0.391017},
+    'HB':  {4: 0.840845, 5: 0.823464, 6: 0.811339, 7: 0.804852},
+    'MT':  {4: 3.529011, 5: 3.598168, 6: 3.719257, 7: 3.810681},
+    'HT':  {4: 3.332846, 5: 3.384895, 6: 3.458092, 7: 3.508785},
+    'STR': {4: 6.537851, 5: 6.649420, 6: 6.800056, 7: 6.903531},
+    'TR':  {4: 10.291092, 5: 10.488813, 6: 10.808050, 7: 11.043444}
+}
+
+# Flexible Pavement - pt = 2.5
+TRUCK_FACTORS_FLEX_PT25 = {
+    'MB':  {4: 0.478779, 5: 0.436804, 6: 0.411572, 7: 0.398978},
+    'HB':  {4: 0.900196, 5: 0.857979, 6: 0.829541, 7: 0.814598},
+    'MT':  {4: 3.069453, 5: 3.203842, 6: 3.451114, 7: 3.645241},
+    'HT':  {4: 3.053625, 5: 3.157524, 6: 3.311765, 7: 3.421800},
+    'STR': {4: 5.955718, 5: 6.182789, 6: 6.501567, 7: 6.726542},
+    'TR':  {4: 9.069826, 5: 9.462000, 6: 10.120276, 7: 10.622935}
+}
+
+# Flexible Pavement - pt = 3.0
+TRUCK_FACTORS_FLEX_PT30 = {
+    'MB':  {4: 0.565037, 5: 0.480643, 6: 0.432964, 7: 0.409996},
+    'HB':  {4: 0.989302, 5: 0.907358, 6: 0.854877, 7: 0.827976},
+    'MT':  {4: 2.552540, 5: 2.742623, 6: 3.120508, 7: 3.433469},
+    'HT':  {4: 2.728486, 5: 2.879854, 6: 3.125499, 7: 3.308196},
+    'STR': {4: 5.266321, 5: 5.609502, 6: 6.120685, 7: 6.495126},
+    'TR':  {4: 7.671306, 5: 8.245291, 6: 9.265343, 7: 10.082089}
 }
 
 
 def get_default_truck_factor(truck_code, pavement_type, pt, param):
     """ดึงค่า Truck Factor เริ่มต้นจากตาราง"""
     if pavement_type == 'rigid':
-        if pt == 2.5:
-            return TRUCK_FACTORS_RIGID_PT25[truck_code][param]
-        else:
+        if pt == 2.0:
             return TRUCK_FACTORS_RIGID_PT20[truck_code][param]
-    else:
-        if pt == 2.5:
-            return TRUCK_FACTORS_FLEX_PT25[truck_code][param]
-        else:
+        elif pt == 2.5:
+            return TRUCK_FACTORS_RIGID_PT25[truck_code][param]
+        else:  # pt == 3.0
+            return TRUCK_FACTORS_RIGID_PT30[truck_code][param]
+    else:  # flexible
+        if pt == 2.0:
             return TRUCK_FACTORS_FLEX_PT20[truck_code][param]
+        elif pt == 2.5:
+            return TRUCK_FACTORS_FLEX_PT25[truck_code][param]
+        else:  # pt == 3.0
+            return TRUCK_FACTORS_FLEX_PT30[truck_code][param]
 
 
 def calculate_esal(traffic_df, truck_factors, lane_factor=0.5, direction_factor=1.0):
@@ -177,11 +201,21 @@ def get_all_truck_factors_table(pavement_type, pt):
     if pavement_type == 'rigid':
         params = [10, 11, 12, 13, 14]
         param_label = 'D'
-        tf_table = TRUCK_FACTORS_RIGID_PT25 if pt == 2.5 else TRUCK_FACTORS_RIGID_PT20
+        if pt == 2.0:
+            tf_table = TRUCK_FACTORS_RIGID_PT20
+        elif pt == 2.5:
+            tf_table = TRUCK_FACTORS_RIGID_PT25
+        else:
+            tf_table = TRUCK_FACTORS_RIGID_PT30
     else:
         params = [4, 5, 6, 7]
         param_label = 'SN'
-        tf_table = TRUCK_FACTORS_FLEX_PT25 if pt == 2.5 else TRUCK_FACTORS_FLEX_PT20
+        if pt == 2.0:
+            tf_table = TRUCK_FACTORS_FLEX_PT20
+        elif pt == 2.5:
+            tf_table = TRUCK_FACTORS_FLEX_PT25
+        else:
+            tf_table = TRUCK_FACTORS_FLEX_PT30
     
     for code in TRUCKS.keys():
         row = {'ประเภท': code, 'รายละเอียด': TRUCKS[code]['desc']}
@@ -254,7 +288,8 @@ def main():
         
         pt = st.selectbox(
             "Terminal Serviceability (pt)",
-            options=[2.5, 2.0],
+            options=[2.0, 2.5, 3.0],
+            index=1,
             format_func=lambda x: f"pt = {x}"
         )
         
@@ -504,18 +539,24 @@ def main():
         col1, col2 = st.columns(2)
         
         with col1:
+            st.write("**🧱 Rigid Pavement (pt = 2.0)**")
+            st.dataframe(get_all_truck_factors_table('rigid', 2.0), use_container_width=True, hide_index=True)
+            
             st.write("**🧱 Rigid Pavement (pt = 2.5)**")
             st.dataframe(get_all_truck_factors_table('rigid', 2.5), use_container_width=True, hide_index=True)
             
-            st.write("**🧱 Rigid Pavement (pt = 2.0)**")
-            st.dataframe(get_all_truck_factors_table('rigid', 2.0), use_container_width=True, hide_index=True)
+            st.write("**🧱 Rigid Pavement (pt = 3.0)**")
+            st.dataframe(get_all_truck_factors_table('rigid', 3.0), use_container_width=True, hide_index=True)
         
         with col2:
+            st.write("**🛤️ Flexible Pavement (pt = 2.0)**")
+            st.dataframe(get_all_truck_factors_table('flexible', 2.0), use_container_width=True, hide_index=True)
+            
             st.write("**🛤️ Flexible Pavement (pt = 2.5)**")
             st.dataframe(get_all_truck_factors_table('flexible', 2.5), use_container_width=True, hide_index=True)
             
-            st.write("**🛤️ Flexible Pavement (pt = 2.0)**")
-            st.dataframe(get_all_truck_factors_table('flexible', 2.0), use_container_width=True, hide_index=True)
+            st.write("**🛤️ Flexible Pavement (pt = 3.0)**")
+            st.dataframe(get_all_truck_factors_table('flexible', 3.0), use_container_width=True, hide_index=True)
     
     with tab3:
         st.subheader("📘 คู่มือการใช้งาน")
@@ -537,9 +578,9 @@ def main():
         
         - **Rigid:** D = 10-14 นิ้ว
         - **Flexible:** SN = 4-7
-        - **pt:** 2.0 หรือ 2.5
+        - **pt:** 2.0, 2.5 หรือ 3.0
         
-        ### 3️⃣ แก้ไขค่า Truck Factor (ใหม่!)
+        ### 3️⃣ แก้ไขค่า Truck Factor
         
         - ค่า Truck Factor สามารถแก้ไขได้ที่ Sidebar
         - ค่า Default จะโหลดตามตาราง AASHTO 1993
@@ -552,6 +593,18 @@ def main():
         st.latex(r'ESAL = \sum_{i=1}^{n} \sum_{j=1}^{6} (ADT_{ij} \times TF_j \times LF \times DF \times 365)')
         
         st.markdown("""
+        ### 5️⃣ สูตรคำนวณ Truck Factor (AASHTO 1993)
+        
+        **Flexible Pavement (สมการ 2-1):**
+        """)
+        st.latex(r'\log\left(\frac{W_{tx}}{W_{t18}}\right) = 4.79 \cdot \log(18+1) - 4.79 \cdot \log(L_x+L_2) + 4.33 \cdot \log(L_2) + \frac{G_t}{\beta_x} - \frac{G_t}{\beta_{18}}')
+        
+        st.markdown("""
+        **Rigid Pavement (สมการ 2-2):**
+        """)
+        st.latex(r'\log\left(\frac{W_{tx}}{W_{t18}}\right) = 4.62 \cdot \log(18+1) - 4.62 \cdot \log(L_x+L_2) + 3.28 \cdot \log(L_2) + \frac{G_t}{\beta_x} - \frac{G_t}{\beta_{18}}')
+        
+        st.markdown("""
         ### 📚 อ้างอิง
         - AASHTO Guide for Design of Pavement Structures (1993)
         - กรมทางหลวง กระทรวงคมนาคม
@@ -560,7 +613,7 @@ def main():
     st.divider()
     st.markdown("""
     <div style="text-align: center; color: #888;">
-        พัฒนาเพื่อการเรียนการสอนโดย รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.1
+        พัฒนาเพื่อการเรียนการสอนโดย รศ.ดร.อิทธิพล มีผล ภาควิชาครุศาสตร์โยธา มจพ. | ESAL Calculator v1.2
     </div>
     """, unsafe_allow_html=True)
 
