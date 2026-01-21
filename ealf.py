@@ -86,20 +86,17 @@ def get_default_trucks():
         'HB': {'name': 'Heavy Bus', 'axles': [
             {'name': 'เพลาหน้า', 'load': 4.0, 'L2': 1},
             {'name': 'เพลาหลัง', 'load': 14.3, 'L2': 2},
-            {'name': 'เพลาพ่วงหน้า', 'load': 0.0, 'L2': 0},
-            {'name': 'เพลาพ่วงหลัง', 'load': 20.0, 'L2': 2},
+
         ]},
         'MT': {'name': 'Medium Truck', 'axles': [
             {'name': 'เพลาหน้า', 'load': 4.0, 'L2': 1},
             {'name': 'เพลาหลัง', 'load': 11.0, 'L2': 1},
-            {'name': 'เพลาพ่วงหน้า', 'load': 0.0, 'L2': 0},
-            {'name': 'เพลาพ่วงหลัง', 'load': 20.0, 'L2': 2},
+
         ]},
         'HT': {'name': 'Heavy Truck', 'axles': [
             {'name': 'เพลาหน้า', 'load': 5.0, 'L2': 1},
             {'name': 'เพลาหลัง', 'load': 20.0, 'L2': 2},
-            {'name': 'เพลาพ่วงหน้า', 'load': 0.0, 'L2': 0},
-            {'name': 'เพลาพ่วงหลัง', 'load': 20.0, 'L2': 2},
+
         ]},
         'STR': {'name': 'Semi-Trailer', 'axles': [
             {'name': 'เพลาหน้า', 'load': 5.0, 'L2': 1},
@@ -376,6 +373,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
