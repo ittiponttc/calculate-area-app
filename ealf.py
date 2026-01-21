@@ -143,8 +143,8 @@ def main():
     st.sidebar.subheader("Flexible Pavement")
     sn_options = st.sidebar.multiselect(
         "Structural Number (SN)",
-        options=[4, 5, 6, 7],
-        default=[4, 5, 6, 7]
+        options=[4, 5, 6, 7, 8],
+        default=[4, 5, 6, 7, 8]
     )
     
     st.sidebar.subheader("Rigid Pavement")
@@ -373,6 +373,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
