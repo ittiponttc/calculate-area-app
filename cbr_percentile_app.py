@@ -4,6 +4,8 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy import interpolate
 import json
+import subprocess
+import os
 
 st.set_page_config(
     page_title="CBR Percentile Analysis",
@@ -184,6 +186,10 @@ if cbr_values is not None and len(cbr_values) > 0:
     # Create figure
     fig = go.Figure()
     
+    # Calculate axis ranges
+    x_max = max(cbr_sorted) * 1.1
+    y_max = 100
+    
     # Add main curve
     fig.add_trace(go.Scatter(
         x=cbr_sorted,
@@ -227,10 +233,10 @@ if cbr_values is not None and len(cbr_values) > 0:
         font=dict(size=16, color='red')
     )
     
-    # Calculate axis ranges
-    x_max = max(cbr_sorted) * 1.1
+    # Border line width (consistent for all 4 sides)
+    border_width = 2
     
-    # Update layout with proper border on all sides using shapes
+    # Update layout - remove axis lines, we'll draw border using shapes
     fig.update_layout(
         xaxis_title="CBR (%)",
         yaxis_title="Percentile (%)",
@@ -238,25 +244,23 @@ if cbr_values is not None and len(cbr_values) > 0:
             range=[0, x_max],
             gridcolor='lightgray',
             showgrid=True,
-            showline=True,
-            linewidth=2,
-            linecolor='black',
+            showline=False,  # Disable built-in axis line
             zeroline=False,
             ticks='outside',
             tickwidth=1,
             tickcolor='black',
+            ticklen=5,
         ),
         yaxis=dict(
-            range=[0, 105],
+            range=[0, y_max],
             gridcolor='lightgray',
             showgrid=True,
-            showline=True,
-            linewidth=2,
-            linecolor='black',
+            showline=False,  # Disable built-in axis line
             zeroline=False,
             ticks='outside',
             tickwidth=1,
             tickcolor='black',
+            ticklen=5,
         ),
         plot_bgcolor='white',
         width=600,
@@ -276,20 +280,15 @@ if cbr_values is not None and len(cbr_values) > 0:
             x=0.5,
             xanchor='center'
         ),
-        margin=dict(l=60, r=60, t=60, b=60)
+        margin=dict(l=70, r=70, t=70, b=70)
     )
     
-    # Add border lines using shapes (top and right borders)
+    # Draw complete border using a rectangle shape (ensures all 4 corners connect)
     fig.add_shape(
-        type="line",
-        x0=0, y0=105, x1=x_max, y1=105,
-        line=dict(color="black", width=2),
-        xref="x", yref="y"
-    )
-    fig.add_shape(
-        type="line",
-        x0=x_max, y0=0, x1=x_max, y1=105,
-        line=dict(color="black", width=2),
+        type="rect",
+        x0=0, y0=0,
+        x1=x_max, y1=y_max,
+        line=dict(color="black", width=border_width),
         xref="x", yref="y"
     )
     
@@ -301,7 +300,7 @@ if cbr_values is not None and len(cbr_values) > 0:
     # Results section - below the graph
     st.markdown("---")
     
-    col_result, col_stat, col_export = st.columns(3)
+    col_result, col_stat = st.columns(2)
     
     with col_result:
         st.markdown("### 📊 ผลการวิเคราะห์")
@@ -318,10 +317,14 @@ if cbr_values is not None and len(cbr_values) > 0:
         st.write(f"**ค่าเฉลี่ย:** {np.mean(cbr_values):.2f} %")
         st.write(f"**ส่วนเบี่ยงเบนมาตรฐาน:** {np.std(cbr_values):.2f} %")
     
-    with col_export:
-        st.markdown("### 💾 บันทึกข้อมูล")
-        
-        # Prepare export data
+    # Export section
+    st.markdown("---")
+    st.markdown("### 💾 บันทึกข้อมูล")
+    
+    col_json, col_word = st.columns(2)
+    
+    with col_json:
+        # Prepare export data for JSON
         export_data = {
             'target_percentile': target_percentile,
             'cbr_at_percentile': round(cbr_at_percentile, 2),
@@ -345,6 +348,221 @@ if cbr_values is not None and len(cbr_values) > 0:
             mime="application/json",
             help="บันทึกข้อมูลและการตั้งค่าเป็นไฟล์ JSON"
         )
+    
+    with col_word:
+        # Generate Word document
+        if st.button("📄 สร้างรายงาน Word", help="สร้างรายงานผลการวิเคราะห์เป็นไฟล์ Word"):
+            try:
+                # Save chart as image first
+                chart_path = "/tmp/cbr_chart.png"
+                fig.write_image(chart_path, width=600, height=600, scale=2)
+                
+                # Create Word document using docx-js
+                js_code = f'''
+const {{ Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+        ImageRun, AlignmentType, BorderStyle, WidthType, HeadingLevel }} = require('docx');
+const fs = require('fs');
+
+const border = {{ style: BorderStyle.SINGLE, size: 1, color: "000000" }};
+const borders = {{ top: border, bottom: border, left: border, right: border }};
+
+// Read chart image
+const chartImage = fs.readFileSync("{chart_path}");
+
+const doc = new Document({{
+    styles: {{
+        default: {{
+            document: {{
+                run: {{ font: "TH SarabunPSK", size: 32 }}
+            }}
+        }},
+        paragraphStyles: [
+            {{
+                id: "Heading1",
+                name: "Heading 1",
+                basedOn: "Normal",
+                next: "Normal",
+                quickFormat: true,
+                run: {{ size: 36, bold: true, font: "TH SarabunPSK" }},
+                paragraph: {{ spacing: {{ before: 240, after: 240 }}, alignment: AlignmentType.CENTER }}
+            }},
+            {{
+                id: "Heading2",
+                name: "Heading 2",
+                basedOn: "Normal",
+                next: "Normal",
+                quickFormat: true,
+                run: {{ size: 32, bold: true, font: "TH SarabunPSK" }},
+                paragraph: {{ spacing: {{ before: 180, after: 120 }} }}
+            }}
+        ]
+    }},
+    sections: [{{
+        properties: {{
+            page: {{
+                size: {{ width: 11906, height: 16838 }},
+                margin: {{ top: 1440, right: 1440, bottom: 1440, left: 1440 }}
+            }}
+        }},
+        children: [
+            new Paragraph({{
+                heading: HeadingLevel.HEADING_1,
+                children: [new TextRun("รายงานผลการวิเคราะห์ค่า CBR ที่เปอร์เซ็นต์ไทล์")]
+            }}),
+            
+            new Paragraph({{
+                heading: HeadingLevel.HEADING_2,
+                children: [new TextRun("ผลการวิเคราะห์")]
+            }}),
+            
+            new Paragraph({{
+                children: [
+                    new TextRun({{ text: "Percentile ที่กำหนด: ", bold: true }}),
+                    new TextRun("{target_percentile:.0f} %")
+                ],
+                spacing: {{ after: 120 }}
+            }}),
+            
+            new Paragraph({{
+                children: [
+                    new TextRun({{ text: "ค่า CBR ที่ Percentile {target_percentile:.0f}%: ", bold: true }}),
+                    new TextRun({{ text: "{cbr_at_percentile:.2f} %", bold: true, color: "FF0000" }})
+                ],
+                spacing: {{ after: 240 }}
+            }}),
+            
+            new Paragraph({{
+                heading: HeadingLevel.HEADING_2,
+                children: [new TextRun("สถิติข้อมูล CBR")]
+            }}),
+            
+            new Table({{
+                width: {{ size: 50, type: WidthType.PERCENTAGE }},
+                columnWidths: [4500, 4500],
+                rows: [
+                    new TableRow({{
+                        children: [
+                            new TableCell({{
+                                borders,
+                                width: {{ size: 4500, type: WidthType.DXA }},
+                                children: [new Paragraph({{ children: [new TextRun({{ text: "รายการ", bold: true }})] }})]
+                            }}),
+                            new TableCell({{
+                                borders,
+                                width: {{ size: 4500, type: WidthType.DXA }},
+                                children: [new Paragraph({{ children: [new TextRun({{ text: "ค่า", bold: true }})] }})]
+                            }})
+                        ]
+                    }}),
+                    new TableRow({{
+                        children: [
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("จำนวนตัวอย่าง")] }}),
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{n}")] }})
+                        ]
+                    }}),
+                    new TableRow({{
+                        children: [
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ค่าต่ำสุด")] }}),
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.min(cbr_values):.2f} %")] }})
+                        ]
+                    }}),
+                    new TableRow({{
+                        children: [
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ค่าสูงสุด")] }}),
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.max(cbr_values):.2f} %")] }})
+                        ]
+                    }}),
+                    new TableRow({{
+                        children: [
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ค่าเฉลี่ย")] }}),
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.mean(cbr_values):.2f} %")] }})
+                        ]
+                    }}),
+                    new TableRow({{
+                        children: [
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ส่วนเบี่ยงเบนมาตรฐาน")] }}),
+                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.std(cbr_values):.2f} %")] }})
+                        ]
+                    }})
+                ]
+            }}),
+            
+            new Paragraph({{
+                heading: HeadingLevel.HEADING_2,
+                children: [new TextRun("กราฟ Percentile vs CBR")],
+                spacing: {{ before: 360 }}
+            }}),
+            
+            new Paragraph({{
+                alignment: AlignmentType.CENTER,
+                children: [
+                    new ImageRun({{
+                        type: "png",
+                        data: chartImage,
+                        transformation: {{ width: 400, height: 400 }},
+                        altText: {{ title: "CBR Chart", description: "CBR Percentile Chart", name: "chart" }}
+                    }})
+                ]
+            }}),
+            
+            new Paragraph({{
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({{ text: "รูปที่ 1 กราฟแสดงความสัมพันธ์ระหว่าง Percentile และ CBR", italics: true }})],
+                spacing: {{ before: 120, after: 240 }}
+            }}),
+            
+            new Paragraph({{
+                children: [new TextRun("---")],
+                alignment: AlignmentType.CENTER,
+                spacing: {{ before: 480 }}
+            }}),
+            
+            new Paragraph({{
+                children: [new TextRun({{ text: "พัฒนาโดย รศ.ดร.อิทธิพล มีผล", italics: true }})],
+                alignment: AlignmentType.CENTER
+            }}),
+            new Paragraph({{
+                children: [new TextRun({{ text: "ภาควิชาครุศาสตร์โยธา คณะครุศาสตร์อุตสาหกรรม มจพ.", italics: true }})],
+                alignment: AlignmentType.CENTER
+            }})
+        ]
+    }}]
+}});
+
+Packer.toBuffer(doc).then(buffer => {{
+    fs.writeFileSync("/tmp/cbr_report.docx", buffer);
+    console.log("Document created successfully");
+}});
+'''
+                
+                # Write JS file
+                with open("/tmp/create_doc.js", "w", encoding="utf-8") as f:
+                    f.write(js_code)
+                
+                # Run Node.js to create document
+                result = subprocess.run(
+                    ["node", "/tmp/create_doc.js"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                
+                if result.returncode == 0 and os.path.exists("/tmp/cbr_report.docx"):
+                    with open("/tmp/cbr_report.docx", "rb") as f:
+                        docx_data = f.read()
+                    
+                    st.download_button(
+                        label="📥 Download Word",
+                        data=docx_data,
+                        file_name="cbr_percentile_report.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                    st.success("✅ สร้างรายงาน Word สำเร็จ!")
+                else:
+                    st.error(f"❌ เกิดข้อผิดพลาด: {result.stderr}")
+                    
+            except Exception as e:
+                st.error(f"❌ ไม่สามารถสร้างรายงาน Word ได้: {e}")
     
     # Show data table
     st.markdown("---")
