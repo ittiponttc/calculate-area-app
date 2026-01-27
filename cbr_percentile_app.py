@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 from scipy import interpolate
 import json
 import base64
