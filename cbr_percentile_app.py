@@ -2,10 +2,14 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 from scipy import interpolate
 import json
 import subprocess
 import os
+import io
 
 st.set_page_config(
     page_title="CBR Percentile Analysis",
@@ -234,7 +238,7 @@ if cbr_values is not None and len(cbr_values) > 0:
     )
     
     # Border line width (consistent for all 4 sides)
-    border_width = 2
+    border_width = 4
     
     # Update layout - remove axis lines, we'll draw border using shapes
     fig.update_layout(
@@ -353,9 +357,50 @@ if cbr_values is not None and len(cbr_values) > 0:
         # Generate Word document
         if st.button("📄 สร้างรายงาน Word", help="สร้างรายงานผลการวิเคราะห์เป็นไฟล์ Word"):
             try:
-                # Save chart as image first
+                # Create chart using matplotlib (no kaleido needed)
+                plt.rcParams['font.family'] = 'DejaVu Sans'
+                
+                fig_mpl, ax = plt.subplots(figsize=(6, 6))
+                
+                # Plot main curve
+                y_plot = 100 - cumulative_percentile
+                ax.plot(cbr_sorted, y_plot, 'b-', linewidth=2, marker='x', 
+                       markersize=6, markerfacecolor='black', markeredgecolor='black',
+                       label='CBR Distribution')
+                
+                # Plot dashed lines
+                ax.plot([0, cbr_at_percentile], [target_percentile, target_percentile], 
+                       'r--', linewidth=2, label=f'Percentile {target_percentile}%')
+                ax.plot([cbr_at_percentile, cbr_at_percentile], [0, target_percentile], 
+                       'r--', linewidth=2, label=f'CBR = {cbr_at_percentile:.2f}%')
+                
+                # Annotation
+                ax.annotate(f'{cbr_at_percentile:.2f}', 
+                           xy=(cbr_at_percentile, 0), 
+                           xytext=(cbr_at_percentile, -8),
+                           fontsize=12, color='red', fontweight='bold',
+                           ha='center')
+                
+                ax.set_xlim(0, max(cbr_sorted) * 1.1)
+                ax.set_ylim(0, 100)
+                ax.set_xlabel('CBR (%)', fontsize=12)
+                ax.set_ylabel('Percentile (%)', fontsize=12)
+                ax.set_title(f'CBR at Percentile {target_percentile:.0f}%', fontsize=14)
+                ax.legend(loc='upper right', fontsize=10)
+                ax.grid(True, alpha=0.3)
+                
+                # Set border
+                for spine in ax.spines.values():
+                    spine.set_linewidth(2)
+                    spine.set_color('black')
+                
+                plt.tight_layout()
+                
+                # Save chart
                 chart_path = "/tmp/cbr_chart.png"
-                fig.write_image(chart_path, width=600, height=600, scale=2)
+                fig_mpl.savefig(chart_path, dpi=150, bbox_inches='tight', 
+                               facecolor='white', edgecolor='none')
+                plt.close(fig_mpl)
                 
                 # Create Word document using docx-js
                 js_code = f'''
