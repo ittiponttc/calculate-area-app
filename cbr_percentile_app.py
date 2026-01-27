@@ -535,14 +535,17 @@ if cbr_values is not None and len(cbr_values) > 0:
                     h5_run.font.size = Pt(18)
                     h5_run.font.bold = True
                     
-                    # Create CBR data table
-                    cbr_table = doc.add_table(rows=n+1, cols=3)
+                    # Calculate half point for splitting data
+                    half_n = (n + 1) // 2
+                    
+                    # Create CBR data table with 6 columns (2 sets of 3 columns)
+                    cbr_table = doc.add_table(rows=half_n+1, cols=6)
                     cbr_table.style = 'Table Grid'
                     cbr_table.alignment = WD_TABLE_ALIGNMENT.CENTER
                     
                     # Header row
                     header_row = cbr_table.rows[0]
-                    headers = ['ลำดับ', 'CBR (%)', 'Percentile (%)']
+                    headers = ['ลำดับ', 'CBR (%)', 'Percentile (%)', 'ลำดับ', 'CBR (%)', 'Percentile (%)']
                     for j, header_text in enumerate(headers):
                         cell = header_row.cells[j]
                         run = cell.paragraphs[0].add_run(header_text)
@@ -551,15 +554,39 @@ if cbr_values is not None and len(cbr_values) > 0:
                         run.font.bold = True
                         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
                     
-                    # Data rows
-                    for i in range(n):
+                    # Data rows - split into left and right halves
+                    for i in range(half_n):
                         row = cbr_table.rows[i+1]
-                        cbr_val = cbr_sorted[i]
-                        pct_val = 100 - cumulative_percentile[i]
                         
-                        data = [f'{i+1}', f'{cbr_val:.2f}', f'{pct_val:.2f}']
-                        for j, val in enumerate(data):
+                        # Left side data (first half)
+                        left_idx = i
+                        if left_idx < n:
+                            cbr_val_left = cbr_sorted[left_idx]
+                            pct_val_left = 100 - cumulative_percentile[left_idx]
+                            left_data = [f'{left_idx+1}', f'{cbr_val_left:.2f}', f'{pct_val_left:.2f}']
+                        else:
+                            left_data = ['', '', '']
+                        
+                        # Right side data (second half)
+                        right_idx = i + half_n
+                        if right_idx < n:
+                            cbr_val_right = cbr_sorted[right_idx]
+                            pct_val_right = 100 - cumulative_percentile[right_idx]
+                            right_data = [f'{right_idx+1}', f'{cbr_val_right:.2f}', f'{pct_val_right:.2f}']
+                        else:
+                            right_data = ['', '', '']
+                        
+                        # Fill left side (columns 0-2)
+                        for j, val in enumerate(left_data):
                             cell = row.cells[j]
+                            run = cell.paragraphs[0].add_run(val)
+                            run.font.name = 'TH SarabunPSK'
+                            run.font.size = Pt(14)
+                            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        
+                        # Fill right side (columns 3-5)
+                        for j, val in enumerate(right_data):
+                            cell = row.cells[j+3]
                             run = cell.paragraphs[0].add_run(val)
                             run.font.name = 'TH SarabunPSK'
                             run.font.size = Pt(14)
@@ -567,9 +594,12 @@ if cbr_values is not None and len(cbr_values) > 0:
                     
                     # Set column widths for CBR table
                     for row in cbr_table.rows:
-                        row.cells[0].width = Cm(2)
-                        row.cells[1].width = Cm(3)
-                        row.cells[2].width = Cm(3)
+                        row.cells[0].width = Cm(1.5)
+                        row.cells[1].width = Cm(2.5)
+                        row.cells[2].width = Cm(2.5)
+                        row.cells[3].width = Cm(1.5)
+                        row.cells[4].width = Cm(2.5)
+                        row.cells[5].width = Cm(2.5)
                     
                     # Footer
                     doc.add_paragraph()
