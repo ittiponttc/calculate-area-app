@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from scipy import interpolate
+import json
 
 st.set_page_config(
     page_title="CBR Percentile Analysis",
@@ -14,9 +15,52 @@ st.title("📊 การวิเคราะห์ค่า CBR ที่เป
 st.markdown("### Subgrade CBR Analysis Tool")
 st.markdown("---")
 
+# Sample data (CBR values only)
+sample_cbr = [14.8, 14.37, 5.31, 17.37, 5.48, 18.46, 4.85, 6.23,
+              5.02, 10.78, 10.52, 14, 15.5, 8.7, 12.93, 8.19,
+              8.1, 15.56, 16.88, 20.75, 20.3, 8, 7.84, 7.48,
+              23.55, 8.92, 13.3, 13.5, 13.86, 7.18, 6.95, 5.8,
+              6, 11.18, 9.69, 7.48]
+
 # Sidebar for file upload
 with st.sidebar:
     st.header("📁 อัปโหลดข้อมูล")
+    
+    # Upload JSON for settings
+    st.markdown("#### 📂 โหลดการตั้งค่า")
+    uploaded_json = st.file_uploader(
+        "โหลดข้อมูลจากไฟล์ JSON",
+        type=['json'],
+        help="โหลดค่า Percentile และข้อมูล CBR จากไฟล์ JSON"
+    )
+    
+    if uploaded_json is not None:
+        try:
+            loaded_data = json.load(uploaded_json)
+            
+            # ตรวจสอบว่าเป็นไฟล์ใหม่
+            file_id = f"{uploaded_json.name}_{uploaded_json.size}"
+            if st.session_state.get('last_uploaded_json') != file_id:
+                st.session_state['last_uploaded_json'] = file_id
+                
+                # อัพเดท session_state
+                if 'target_percentile' in loaded_data:
+                    st.session_state['input_percentile'] = float(loaded_data['target_percentile'])
+                if 'cbr_values' in loaded_data:
+                    st.session_state['loaded_cbr_values'] = loaded_data['cbr_values']
+                if 'use_sample' in loaded_data:
+                    st.session_state['input_use_sample'] = loaded_data['use_sample']
+                
+                st.success("✅ โหลดการตั้งค่าสำเร็จ!")
+                st.rerun()
+                
+        except Exception as e:
+            st.error(f"❌ ไม่สามารถอ่านไฟล์ JSON ได้: {e}")
+    
+    st.markdown("---")
+    
+    # Upload Excel for CBR data
+    st.markdown("#### 📊 อัปโหลดข้อมูล CBR")
     uploaded_file = st.file_uploader(
         "เลือกไฟล์ Excel (.xlsx)",
         type=['xlsx'],
@@ -35,13 +79,7 @@ with st.sidebar:
     """)
     st.info("ระบบจะคำนวณ Percentile ให้อัตโนมัติ")
 
-# Sample data (CBR values only)
-sample_cbr = [14.8, 14.37, 5.31, 17.37, 5.48, 18.46, 4.85, 6.23,
-              5.02, 10.78, 10.52, 14, 15.5, 8.7, 12.93, 8.19,
-              8.1, 15.56, 16.88, 20.75, 20.3, 8, 7.84, 7.48,
-              23.55, 8.92, 13.3, 13.5, 13.86, 7.18, 6.95, 5.8,
-              6, 11.18, 9.69, 7.48]
-
+# Process uploaded Excel file
 if uploaded_file is not None:
     try:
         # Read Excel file
@@ -69,9 +107,21 @@ if uploaded_file is not None:
         st.error(f"❌ เกิดข้อผิดพลาด: {str(e)}")
         st.info("กรุณาตรวจสอบรูปแบบไฟล์ Excel")
         cbr_values = None
+
+elif 'loaded_cbr_values' in st.session_state and st.session_state['loaded_cbr_values']:
+    # Use CBR values from loaded JSON
+    cbr_values = st.session_state['loaded_cbr_values']
+    st.info(f"📌 ใช้ข้อมูลจากไฟล์ JSON: {len(cbr_values)} ตัวอย่าง")
+
 else:
     st.info("📌 กรุณาอัปโหลดไฟล์ Excel หรือใช้ข้อมูลตัวอย่าง")
-    use_sample = st.checkbox("ใช้ข้อมูลตัวอย่าง", value=True)
+    
+    default_use_sample = st.session_state.get('input_use_sample', True)
+    use_sample = st.checkbox(
+        "ใช้ข้อมูลตัวอย่าง", 
+        value=default_use_sample,
+        key="input_use_sample"
+    )
     
     if use_sample:
         cbr_values = sample_cbr
@@ -103,13 +153,16 @@ if cbr_values is not None and len(cbr_values) > 0:
     
     # Input percentile at the top
     st.markdown("### 🎯 กำหนดค่า Percentile")
+    
+    default_percentile = st.session_state.get('input_percentile', 90.0)
     target_percentile = st.number_input(
         "Percentile ที่ต้องการ (%)",
         min_value=0.0,
         max_value=100.0,
-        value=90.0,
+        value=default_percentile,
         step=1.0,
-        help="ใส่ค่า Percentile ที่ต้องการหาค่า CBR"
+        help="ใส่ค่า Percentile ที่ต้องการหาค่า CBR",
+        key="input_percentile"
     )
     
     # Calculate CBR at target percentile
@@ -174,19 +227,24 @@ if cbr_values is not None and len(cbr_values) > 0:
         font=dict(size=16, color='red')
     )
     
-    # Update layout with black border and square aspect ratio
+    # Calculate axis ranges
+    x_max = max(cbr_sorted) * 1.1
+    
+    # Update layout with proper border on all sides using shapes
     fig.update_layout(
         xaxis_title="CBR (%)",
         yaxis_title="Percentile (%)",
         xaxis=dict(
-            range=[0, max(cbr_sorted) * 1.1],
+            range=[0, x_max],
             gridcolor='lightgray',
             showgrid=True,
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror='all',
-           
+            zeroline=False,
+            ticks='outside',
+            tickwidth=1,
+            tickcolor='black',
         ),
         yaxis=dict(
             range=[0, 105],
@@ -195,8 +253,10 @@ if cbr_values is not None and len(cbr_values) > 0:
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror='all',
-
+            zeroline=False,
+            ticks='outside',
+            tickwidth=1,
+            tickcolor='black',
         ),
         plot_bgcolor='white',
         width=600,
@@ -206,13 +266,31 @@ if cbr_values is not None and len(cbr_values) > 0:
             yanchor="top",
             y=0.99,
             xanchor="right",
-            x=0.99
+            x=0.99,
+            bgcolor='rgba(255,255,255,0.8)',
+            bordercolor='black',
+            borderwidth=1
         ),
         title=dict(
             text=f"ค่าร้อยละ CBR ที่เปอร์เซ็นต์ไทล์ ร้อยละ {target_percentile:.0f}",
             x=0.5,
             xanchor='center'
-        )
+        ),
+        margin=dict(l=60, r=60, t=60, b=60)
+    )
+    
+    # Add border lines using shapes (top and right borders)
+    fig.add_shape(
+        type="line",
+        x0=0, y0=105, x1=x_max, y1=105,
+        line=dict(color="black", width=2),
+        xref="x", yref="y"
+    )
+    fig.add_shape(
+        type="line",
+        x0=x_max, y0=0, x1=x_max, y1=105,
+        line=dict(color="black", width=2),
+        xref="x", yref="y"
     )
     
     # Center the chart
@@ -223,7 +301,7 @@ if cbr_values is not None and len(cbr_values) > 0:
     # Results section - below the graph
     st.markdown("---")
     
-    col_result, col_stat = st.columns(2)
+    col_result, col_stat, col_export = st.columns(3)
     
     with col_result:
         st.markdown("### 📊 ผลการวิเคราะห์")
@@ -239,6 +317,34 @@ if cbr_values is not None and len(cbr_values) > 0:
         st.write(f"**ค่าสูงสุด:** {np.max(cbr_values):.2f} %")
         st.write(f"**ค่าเฉลี่ย:** {np.mean(cbr_values):.2f} %")
         st.write(f"**ส่วนเบี่ยงเบนมาตรฐาน:** {np.std(cbr_values):.2f} %")
+    
+    with col_export:
+        st.markdown("### 💾 บันทึกข้อมูล")
+        
+        # Prepare export data
+        export_data = {
+            'target_percentile': target_percentile,
+            'cbr_at_percentile': round(cbr_at_percentile, 2),
+            'cbr_values': [float(v) for v in cbr_values],
+            'statistics': {
+                'n_samples': n,
+                'min': round(float(np.min(cbr_values)), 2),
+                'max': round(float(np.max(cbr_values)), 2),
+                'mean': round(float(np.mean(cbr_values)), 2),
+                'std': round(float(np.std(cbr_values)), 2)
+            },
+            'use_sample': st.session_state.get('input_use_sample', True)
+        }
+        
+        json_str = json.dumps(export_data, ensure_ascii=False, indent=2)
+        
+        st.download_button(
+            label="📥 Download JSON",
+            data=json_str,
+            file_name="cbr_percentile_data.json",
+            mime="application/json",
+            help="บันทึกข้อมูลและการตั้งค่าเป็นไฟล์ JSON"
+        )
     
     # Show data table
     st.markdown("---")
