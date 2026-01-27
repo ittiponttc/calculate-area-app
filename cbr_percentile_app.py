@@ -2,14 +2,22 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Agg')
 from scipy import interpolate
 import json
-import subprocess
-import os
+import base64
 import io
+
+# Check if python-docx is available
+try:
+    from docx import Document as DocxDocument
+    from docx.shared import Inches, Pt, Cm, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
 
 st.set_page_config(
     page_title="CBR Percentile Analysis",
@@ -354,260 +362,152 @@ if cbr_values is not None and len(cbr_values) > 0:
         )
     
     with col_word:
-        # Generate Word document
-        if st.button("📄 สร้างรายงาน Word", help="สร้างรายงานผลการวิเคราะห์เป็นไฟล์ Word"):
-            try:
-                # Create chart using matplotlib (no kaleido needed)
-                plt.rcParams['font.family'] = 'DejaVu Sans'
-                
-                fig_mpl, ax = plt.subplots(figsize=(6, 6))
-                
-                # Plot main curve
-                y_plot = 100 - cumulative_percentile
-                ax.plot(cbr_sorted, y_plot, 'b-', linewidth=2, marker='x', 
-                       markersize=6, markerfacecolor='black', markeredgecolor='black',
-                       label='CBR Distribution')
-                
-                # Plot dashed lines
-                ax.plot([0, cbr_at_percentile], [target_percentile, target_percentile], 
-                       'r--', linewidth=2, label=f'Percentile {target_percentile}%')
-                ax.plot([cbr_at_percentile, cbr_at_percentile], [0, target_percentile], 
-                       'r--', linewidth=2, label=f'CBR = {cbr_at_percentile:.2f}%')
-                
-                # Annotation
-                ax.annotate(f'{cbr_at_percentile:.2f}', 
-                           xy=(cbr_at_percentile, 0), 
-                           xytext=(cbr_at_percentile, -8),
-                           fontsize=12, color='red', fontweight='bold',
-                           ha='center')
-                
-                ax.set_xlim(0, max(cbr_sorted) * 1.1)
-                ax.set_ylim(0, 100)
-                ax.set_xlabel('CBR (%)', fontsize=12)
-                ax.set_ylabel('Percentile (%)', fontsize=12)
-                ax.set_title(f'CBR at Percentile {target_percentile:.0f}%', fontsize=14)
-                ax.legend(loc='upper right', fontsize=10)
-                ax.grid(True, alpha=0.3)
-                
-                # Set border
-                for spine in ax.spines.values():
-                    spine.set_linewidth(2)
-                    spine.set_color('black')
-                
-                plt.tight_layout()
-                
-                # Save chart
-                chart_path = "/tmp/cbr_chart.png"
-                fig_mpl.savefig(chart_path, dpi=150, bbox_inches='tight', 
-                               facecolor='white', edgecolor='none')
-                plt.close(fig_mpl)
-                
-                # Create Word document using docx-js
-                js_code = f'''
-const {{ Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-        ImageRun, AlignmentType, BorderStyle, WidthType, HeadingLevel }} = require('docx');
-const fs = require('fs');
-
-const border = {{ style: BorderStyle.SINGLE, size: 1, color: "000000" }};
-const borders = {{ top: border, bottom: border, left: border, right: border }};
-
-// Read chart image
-const chartImage = fs.readFileSync("{chart_path}");
-
-const doc = new Document({{
-    styles: {{
-        default: {{
-            document: {{
-                run: {{ font: "TH SarabunPSK", size: 32 }}
-            }}
-        }},
-        paragraphStyles: [
-            {{
-                id: "Heading1",
-                name: "Heading 1",
-                basedOn: "Normal",
-                next: "Normal",
-                quickFormat: true,
-                run: {{ size: 36, bold: true, font: "TH SarabunPSK" }},
-                paragraph: {{ spacing: {{ before: 240, after: 240 }}, alignment: AlignmentType.CENTER }}
-            }},
-            {{
-                id: "Heading2",
-                name: "Heading 2",
-                basedOn: "Normal",
-                next: "Normal",
-                quickFormat: true,
-                run: {{ size: 32, bold: true, font: "TH SarabunPSK" }},
-                paragraph: {{ spacing: {{ before: 180, after: 120 }} }}
-            }}
-        ]
-    }},
-    sections: [{{
-        properties: {{
-            page: {{
-                size: {{ width: 11906, height: 16838 }},
-                margin: {{ top: 1440, right: 1440, bottom: 1440, left: 1440 }}
-            }}
-        }},
-        children: [
-            new Paragraph({{
-                heading: HeadingLevel.HEADING_1,
-                children: [new TextRun("รายงานผลการวิเคราะห์ค่า CBR ที่เปอร์เซ็นต์ไทล์")]
-            }}),
-            
-            new Paragraph({{
-                heading: HeadingLevel.HEADING_2,
-                children: [new TextRun("ผลการวิเคราะห์")]
-            }}),
-            
-            new Paragraph({{
-                children: [
-                    new TextRun({{ text: "Percentile ที่กำหนด: ", bold: true }}),
-                    new TextRun("{target_percentile:.0f} %")
-                ],
-                spacing: {{ after: 120 }}
-            }}),
-            
-            new Paragraph({{
-                children: [
-                    new TextRun({{ text: "ค่า CBR ที่ Percentile {target_percentile:.0f}%: ", bold: true }}),
-                    new TextRun({{ text: "{cbr_at_percentile:.2f} %", bold: true, color: "FF0000" }})
-                ],
-                spacing: {{ after: 240 }}
-            }}),
-            
-            new Paragraph({{
-                heading: HeadingLevel.HEADING_2,
-                children: [new TextRun("สถิติข้อมูล CBR")]
-            }}),
-            
-            new Table({{
-                width: {{ size: 50, type: WidthType.PERCENTAGE }},
-                columnWidths: [4500, 4500],
-                rows: [
-                    new TableRow({{
-                        children: [
-                            new TableCell({{
-                                borders,
-                                width: {{ size: 4500, type: WidthType.DXA }},
-                                children: [new Paragraph({{ children: [new TextRun({{ text: "รายการ", bold: true }})] }})]
-                            }}),
-                            new TableCell({{
-                                borders,
-                                width: {{ size: 4500, type: WidthType.DXA }},
-                                children: [new Paragraph({{ children: [new TextRun({{ text: "ค่า", bold: true }})] }})]
-                            }})
-                        ]
-                    }}),
-                    new TableRow({{
-                        children: [
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("จำนวนตัวอย่าง")] }}),
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{n}")] }})
-                        ]
-                    }}),
-                    new TableRow({{
-                        children: [
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ค่าต่ำสุด")] }}),
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.min(cbr_values):.2f} %")] }})
-                        ]
-                    }}),
-                    new TableRow({{
-                        children: [
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ค่าสูงสุด")] }}),
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.max(cbr_values):.2f} %")] }})
-                        ]
-                    }}),
-                    new TableRow({{
-                        children: [
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ค่าเฉลี่ย")] }}),
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.mean(cbr_values):.2f} %")] }})
-                        ]
-                    }}),
-                    new TableRow({{
-                        children: [
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("ส่วนเบี่ยงเบนมาตรฐาน")] }}),
-                            new TableCell({{ borders, width: {{ size: 4500, type: WidthType.DXA }}, children: [new Paragraph("{np.std(cbr_values):.2f} %")] }})
-                        ]
-                    }})
-                ]
-            }}),
-            
-            new Paragraph({{
-                heading: HeadingLevel.HEADING_2,
-                children: [new TextRun("กราฟ Percentile vs CBR")],
-                spacing: {{ before: 360 }}
-            }}),
-            
-            new Paragraph({{
-                alignment: AlignmentType.CENTER,
-                children: [
-                    new ImageRun({{
-                        type: "png",
-                        data: chartImage,
-                        transformation: {{ width: 400, height: 400 }},
-                        altText: {{ title: "CBR Chart", description: "CBR Percentile Chart", name: "chart" }}
-                    }})
-                ]
-            }}),
-            
-            new Paragraph({{
-                alignment: AlignmentType.CENTER,
-                children: [new TextRun({{ text: "รูปที่ 1 กราฟแสดงความสัมพันธ์ระหว่าง Percentile และ CBR", italics: true }})],
-                spacing: {{ before: 120, after: 240 }}
-            }}),
-            
-            new Paragraph({{
-                children: [new TextRun("---")],
-                alignment: AlignmentType.CENTER,
-                spacing: {{ before: 480 }}
-            }}),
-            
-            new Paragraph({{
-                children: [new TextRun({{ text: "พัฒนาโดย รศ.ดร.อิทธิพล มีผล", italics: true }})],
-                alignment: AlignmentType.CENTER
-            }}),
-            new Paragraph({{
-                children: [new TextRun({{ text: "ภาควิชาครุศาสตร์โยธา คณะครุศาสตร์อุตสาหกรรม มจพ.", italics: true }})],
-                alignment: AlignmentType.CENTER
-            }})
-        ]
-    }}]
-}});
-
-Packer.toBuffer(doc).then(buffer => {{
-    fs.writeFileSync("/tmp/cbr_report.docx", buffer);
-    console.log("Document created successfully");
-}});
-'''
-                
-                # Write JS file
-                with open("/tmp/create_doc.js", "w", encoding="utf-8") as f:
-                    f.write(js_code)
-                
-                # Run Node.js to create document
-                result = subprocess.run(
-                    ["node", "/tmp/create_doc.js"],
-                    capture_output=True,
-                    text=True,
-                    timeout=30
-                )
-                
-                if result.returncode == 0 and os.path.exists("/tmp/cbr_report.docx"):
-                    with open("/tmp/cbr_report.docx", "rb") as f:
-                        docx_data = f.read()
+        # Generate Word document using python-docx
+        if DOCX_AVAILABLE:
+            if st.button("📄 สร้างรายงาน Word", help="สร้างรายงานผลการวิเคราะห์เป็นไฟล์ Word"):
+                try:
+                    # Create Word document
+                    doc = DocxDocument()
+                    
+                    # Set Thai font style
+                    style = doc.styles['Normal']
+                    style.font.name = 'TH SarabunPSK'
+                    style.font.size = Pt(16)
+                    style._element.rPr.rFonts.set(qn('w:eastAsia'), 'TH SarabunPSK')
+                    
+                    # Title
+                    title = doc.add_heading('', level=1)
+                    title_run = title.add_run('รายงานผลการวิเคราะห์ค่า CBR ที่เปอร์เซ็นต์ไทล์')
+                    title_run.font.name = 'TH SarabunPSK'
+                    title_run.font.size = Pt(20)
+                    title_run.font.bold = True
+                    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    # Results section
+                    h2 = doc.add_heading('', level=2)
+                    h2_run = h2.add_run('ผลการวิเคราะห์')
+                    h2_run.font.name = 'TH SarabunPSK'
+                    h2_run.font.size = Pt(18)
+                    h2_run.font.bold = True
+                    
+                    p1 = doc.add_paragraph()
+                    p1_run1 = p1.add_run('Percentile ที่กำหนด: ')
+                    p1_run1.font.name = 'TH SarabunPSK'
+                    p1_run1.font.size = Pt(16)
+                    p1_run1.font.bold = True
+                    p1_run2 = p1.add_run(f'{target_percentile:.0f} %')
+                    p1_run2.font.name = 'TH SarabunPSK'
+                    p1_run2.font.size = Pt(16)
+                    
+                    p2 = doc.add_paragraph()
+                    p2_run1 = p2.add_run(f'ค่า CBR ที่ Percentile {target_percentile:.0f}%: ')
+                    p2_run1.font.name = 'TH SarabunPSK'
+                    p2_run1.font.size = Pt(16)
+                    p2_run1.font.bold = True
+                    p2_run2 = p2.add_run(f'{cbr_at_percentile:.2f} %')
+                    p2_run2.font.name = 'TH SarabunPSK'
+                    p2_run2.font.size = Pt(16)
+                    p2_run2.font.bold = True
+                    p2_run2.font.color.rgb = RGBColor(255, 0, 0)
+                    
+                    # Statistics section
+                    h3 = doc.add_heading('', level=2)
+                    h3_run = h3.add_run('สถิติข้อมูล CBR')
+                    h3_run.font.name = 'TH SarabunPSK'
+                    h3_run.font.size = Pt(18)
+                    h3_run.font.bold = True
+                    
+                    # Create table
+                    table = doc.add_table(rows=7, cols=2)
+                    table.style = 'Table Grid'
+                    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                    
+                    # Table data
+                    table_data = [
+                        ('รายการ', 'ค่า'),
+                        ('จำนวนตัวอย่าง', f'{n}'),
+                        ('ค่าต่ำสุด', f'{np.min(cbr_values):.2f} %'),
+                        ('ค่าสูงสุด', f'{np.max(cbr_values):.2f} %'),
+                        ('ค่าเฉลี่ย', f'{np.mean(cbr_values):.2f} %'),
+                        ('ส่วนเบี่ยงเบนมาตรฐาน', f'{np.std(cbr_values):.2f} %'),
+                        (f'CBR ที่ Percentile {target_percentile:.0f}%', f'{cbr_at_percentile:.2f} %')
+                    ]
+                    
+                    for i, (col1, col2) in enumerate(table_data):
+                        row = table.rows[i]
+                        cell1 = row.cells[0]
+                        cell2 = row.cells[1]
+                        
+                        run1 = cell1.paragraphs[0].add_run(col1)
+                        run1.font.name = 'TH SarabunPSK'
+                        run1.font.size = Pt(14)
+                        if i == 0:
+                            run1.font.bold = True
+                        
+                        run2 = cell2.paragraphs[0].add_run(col2)
+                        run2.font.name = 'TH SarabunPSK'
+                        run2.font.size = Pt(14)
+                        if i == 0:
+                            run2.font.bold = True
+                        if i == 6:  # Last row - CBR result
+                            run2.font.bold = True
+                            run2.font.color.rgb = RGBColor(255, 0, 0)
+                    
+                    # Set column widths
+                    for row in table.rows:
+                        row.cells[0].width = Cm(6)
+                        row.cells[1].width = Cm(4)
+                    
+                    # Add note about chart
+                    doc.add_paragraph()
+                    h4 = doc.add_heading('', level=2)
+                    h4_run = h4.add_run('กราฟ Percentile vs CBR')
+                    h4_run.font.name = 'TH SarabunPSK'
+                    h4_run.font.size = Pt(18)
+                    h4_run.font.bold = True
+                    
+                    note = doc.add_paragraph()
+                    note_run = note.add_run('(กรุณาดูกราฟจากแอปพลิเคชัน Streamlit)')
+                    note_run.font.name = 'TH SarabunPSK'
+                    note_run.font.size = Pt(14)
+                    note_run.font.italic = True
+                    note.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    # Footer
+                    doc.add_paragraph()
+                    doc.add_paragraph()
+                    footer1 = doc.add_paragraph()
+                    footer1_run = footer1.add_run('พัฒนาโดย รศ.ดร.อิทธิพล มีผล')
+                    footer1_run.font.name = 'TH SarabunPSK'
+                    footer1_run.font.size = Pt(14)
+                    footer1_run.font.italic = True
+                    footer1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    footer2 = doc.add_paragraph()
+                    footer2_run = footer2.add_run('ภาควิชาครุศาสตร์โยธา คณะครุศาสตร์อุตสาหกรรม มจพ.')
+                    footer2_run.font.name = 'TH SarabunPSK'
+                    footer2_run.font.size = Pt(14)
+                    footer2_run.font.italic = True
+                    footer2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    # Save to buffer
+                    buffer = io.BytesIO()
+                    doc.save(buffer)
+                    buffer.seek(0)
                     
                     st.download_button(
                         label="📥 Download Word",
-                        data=docx_data,
+                        data=buffer,
                         file_name="cbr_percentile_report.docx",
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     )
                     st.success("✅ สร้างรายงาน Word สำเร็จ!")
-                else:
-                    st.error(f"❌ เกิดข้อผิดพลาด: {result.stderr}")
                     
-            except Exception as e:
-                st.error(f"❌ ไม่สามารถสร้างรายงาน Word ได้: {e}")
+                except Exception as e:
+                    st.error(f"❌ ไม่สามารถสร้างรายงาน Word ได้: {e}")
+        else:
+            st.warning("⚠️ ต้องติดตั้ง python-docx เพื่อใช้งานฟีเจอร์นี้")
+            st.code("pip install python-docx", language="bash")
     
     # Show data table
     st.markdown("---")
