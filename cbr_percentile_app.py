@@ -466,12 +466,107 @@ if cbr_values is not None and len(cbr_values) > 0:
                     h4_run.font.size = Pt(18)
                     h4_run.font.bold = True
                     
-                    note = doc.add_paragraph()
-                    note_run = note.add_run('(กรุณาดูกราฟจากแอปพลิเคชัน Streamlit)')
-                    note_run.font.name = 'TH SarabunPSK'
-                    note_run.font.size = Pt(14)
-                    note_run.font.italic = True
-                    note.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    # Create chart using matplotlib
+                    fig_mpl, ax = plt.subplots(figsize=(6, 6))
+                    
+                    # Plot main curve
+                    y_plot = 100 - cumulative_percentile
+                    ax.plot(cbr_sorted, y_plot, 'b-', linewidth=2, marker='x', 
+                           markersize=6, markerfacecolor='black', markeredgecolor='black',
+                           label='CBR Distribution')
+                    
+                    # Plot dashed lines
+                    ax.plot([0, cbr_at_percentile], [target_percentile, target_percentile], 
+                           'r--', linewidth=2, label=f'Percentile {target_percentile}%')
+                    ax.plot([cbr_at_percentile, cbr_at_percentile], [0, target_percentile], 
+                           'r--', linewidth=2, label=f'CBR = {cbr_at_percentile:.2f}%')
+                    
+                    # Annotation
+                    ax.annotate(f'{cbr_at_percentile:.2f}', 
+                               xy=(cbr_at_percentile, 0), 
+                               xytext=(cbr_at_percentile, -8),
+                               fontsize=12, color='red', fontweight='bold',
+                               ha='center')
+                    
+                    ax.set_xlim(0, max(cbr_sorted) * 1.1)
+                    ax.set_ylim(0, 100)
+                    ax.set_xlabel('CBR (%)', fontsize=12)
+                    ax.set_ylabel('Percentile (%)', fontsize=12)
+                    ax.set_title(f'CBR at Percentile {target_percentile:.0f}%', fontsize=14)
+                    ax.legend(loc='upper right', fontsize=10)
+                    ax.grid(True, alpha=0.3)
+                    
+                    # Set border
+                    for spine in ax.spines.values():
+                        spine.set_linewidth(2)
+                        spine.set_color('black')
+                    
+                    plt.tight_layout()
+                    
+                    # Save chart to buffer
+                    chart_buffer = io.BytesIO()
+                    fig_mpl.savefig(chart_buffer, format='png', dpi=150, 
+                                   bbox_inches='tight', facecolor='white', edgecolor='none')
+                    chart_buffer.seek(0)
+                    plt.close(fig_mpl)
+                    
+                    # Add chart image to document
+                    chart_para = doc.add_paragraph()
+                    chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    chart_run = chart_para.add_run()
+                    chart_run.add_picture(chart_buffer, width=Cm(12))
+                    
+                    # Add caption
+                    caption = doc.add_paragraph()
+                    caption_run = caption.add_run('รูปที่ 1 กราฟแสดงความสัมพันธ์ระหว่าง Percentile และ CBR')
+                    caption_run.font.name = 'TH SarabunPSK'
+                    caption_run.font.size = Pt(14)
+                    caption_run.font.italic = True
+                    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    # Add CBR data table section
+                    doc.add_paragraph()
+                    h5 = doc.add_heading('', level=2)
+                    h5_run = h5.add_run('ตารางข้อมูล CBR (เรียงตาม CBR)')
+                    h5_run.font.name = 'TH SarabunPSK'
+                    h5_run.font.size = Pt(18)
+                    h5_run.font.bold = True
+                    
+                    # Create CBR data table
+                    cbr_table = doc.add_table(rows=n+1, cols=3)
+                    cbr_table.style = 'Table Grid'
+                    cbr_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                    
+                    # Header row
+                    header_row = cbr_table.rows[0]
+                    headers = ['ลำดับ', 'CBR (%)', 'Percentile (%)']
+                    for j, header_text in enumerate(headers):
+                        cell = header_row.cells[j]
+                        run = cell.paragraphs[0].add_run(header_text)
+                        run.font.name = 'TH SarabunPSK'
+                        run.font.size = Pt(14)
+                        run.font.bold = True
+                        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    # Data rows
+                    for i in range(n):
+                        row = cbr_table.rows[i+1]
+                        cbr_val = cbr_sorted[i]
+                        pct_val = 100 - cumulative_percentile[i]
+                        
+                        data = [f'{i+1}', f'{cbr_val:.2f}', f'{pct_val:.2f}']
+                        for j, val in enumerate(data):
+                            cell = row.cells[j]
+                            run = cell.paragraphs[0].add_run(val)
+                            run.font.name = 'TH SarabunPSK'
+                            run.font.size = Pt(14)
+                            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    # Set column widths for CBR table
+                    for row in cbr_table.rows:
+                        row.cells[0].width = Cm(2)
+                        row.cells[1].width = Cm(3)
+                        row.cells[2].width = Cm(3)
                     
                     # Footer
                     doc.add_paragraph()
